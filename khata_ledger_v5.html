@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khata — Ledger Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --paper: #EDE6D3;
+    --paper-line: #C9A961;
+    --cover: #2F4A3C;
+    --cover-dark: #223A2F;
+    --ink-debit: #A6342D;
+    --ink-credit: #1F3A5F;
+    --ink-black: #2B2823;
+    --ink-faded: #6B6355;
+    --gold: #B8935A;
+    --paper-shadow: rgba(43, 40, 35, 0.15);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--cover);
+    background-image:
+      radial-gradient(ellipse at top left, rgba(255,255,255,0.04), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(0,0,0,0.15), transparent 60%);
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-black);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .book {
+    max-width: none;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    background: var(--paper);
+    border-radius: 0;
+    box-shadow: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .spine {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 34px;
+    background: linear-gradient(90deg, var(--cover-dark), var(--cover));
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+  }
+  .spine .stitch {
+    width: 2px; height: 14px;
+    background: rgba(237, 230, 211, 0.35);
+    border-radius: 1px;
+  }
+
+  .page {
+    margin-left: 34px;
+    padding: 32px 36px 40px 44px;
+    position: relative;
+    min-height: 400px;
+  }
+
+  .page::before {
+    content: "";
+    display: none;
+  }
+
+  header.masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 18px;
+    border-bottom: 3px double var(--gold);
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .masthead h1 {
+    font-family: 'Merriweather', serif;
+    font-weight: 900;
+    font-size: 30px;
+    margin: 0;
+    color: var(--cover);
+    letter-spacing: 0.3px;
+  }
+  .masthead .bangla {
+    font-family: 'Noto Sans Bengali', sans-serif;
+    font-size: 15px;
+    color: var(--ink-faded);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .masthead .shopname-wrap {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #shopName {
+    font-family: 'Merriweather', serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink-faded);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--paper-line);
+    padding: 2px 0;
+    width: 220px;
+    text-align: right;
+  }
+  #shopName:focus { outline: none; border-bottom-color: var(--cover); }
+
+  /* ---------- Home view: nav options ---------- */
+  .nav-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 30px;
+  }
+  .nav-card {
+    background: #F7F2E4;
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 26px 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .nav-card:hover { border-color: var(--cover); transform: translateY(-2px); }
+  .nav-card .num {
+    font-family: 'Merriweather', serif;
+    font-weight: 900;
+    font-size: 13px;
+    color: var(--gold);
+    letter-spacing: 2px;
+  }
+  .nav-card .title {
+    font-family: 'Merriweather', serif;
+    font-weight: 700;
+    font-size: 19px;
+    color: var(--cover);
+  }
+  .nav-card .desc {
+    font-size: 12px;
+    color: var(--ink-faded);
+    line-height: 1.5;
+  }
+  .nav-card .bangla-sub {
+    font-family: 'Noto Sans Bengali', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink-faded);
+  }
+
+  .home-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--paper-line);
+    border: 1px solid var(--paper-line);
+    margin-top: 24px;
+  }
+  .home-summary .cell { background: var(--paper); padding: 12px 16px; text-align: center; }
+  .home-summary .label {
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-faded); font-weight: 600; margin-bottom: 6px;
+  }
+  .home-summary .value { font-family: 'Merriweather', serif; font-weight: 900; font-size: 20px; }
+  .home-summary .credit .value { color: var(--ink-credit); }
+  .home-summary .debit .value { color: var(--ink-debit); }
+  .home-summary .net .value { color: var(--cover); }
+
+  .nav-cards.two-col { grid-template-columns: repeat(2, 1fr); }
+
+  @media (max-width: 900px) {
+    .nav-cards { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 760px) {
+    .nav-cards { grid-template-columns: 1fr; }
+    .nav-cards.two-col { grid-template-columns: 1fr; }
+    .home-summary { grid-template-columns: 1fr; }
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: none; color: var(--ink-faded);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    cursor: pointer; margin-bottom: 18px; padding: 0;
+  }
+  .back-link:hover { color: var(--cover); }
+
+  .entry-page-title {
+    font-family: 'Merriweather', serif; font-weight: 700; font-size: 22px;
+    color: var(--cover); margin: 0 0 4px;
+  }
+  .entry-page-sub { font-size: 12.5px; color: var(--ink-faded); margin-bottom: 24px; }
+
+  form.entry-form {
+    display: flex; flex-direction: column; gap: 18px; max-width: 460px;
+  }
+  form.entry-form.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    max-width: 640px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.span-2 { grid-column: span 2; }
+  .field label {
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink-faded); font-weight: 600;
+  }
+  input, select {
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+    padding: 11px 12px; border: 1px solid var(--paper-line);
+    background: #F7F2E4; color: var(--ink-black); border-radius: 2px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--cover); background: #fff; }
+  .type-toggle {
+    display: flex; border: 1px solid var(--paper-line); border-radius: 2px;
+    overflow: hidden; height: 42px;
+  }
+  .type-toggle button {
+    flex: 1; border: none; background: #F7F2E4;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 12px;
+    cursor: pointer; color: var(--ink-faded); letter-spacing: 0.5px;
+  }
+  .type-toggle button.active.credit { background: var(--ink-credit); color: #fff; }
+  .type-toggle button.active.debit { background: var(--ink-debit); color: #fff; }
+
+  .form-btn-row { display: flex; gap: 10px; margin-top: 6px; }
+  button.add-btn {
+    background: var(--cover); color: var(--paper); border: none;
+    padding: 13px 18px; font-family: 'Merriweather', serif; font-weight: 700;
+    font-size: 14px; border-radius: 2px; cursor: pointer;
+  }
+  button.add-btn:hover { background: var(--cover-dark); }
+  button.cancel-btn {
+    background: transparent; color: var(--ink-faded); border: 1px solid var(--paper-line);
+    padding: 13px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+    border-radius: 2px; cursor: pointer;
+  }
+  button.cancel-btn:hover { border-color: var(--ink-debit); color: var(--ink-debit); }
+
+  .save-flash {
+    display: none; background: rgba(31, 58, 95, 0.1); border: 1px solid var(--ink-credit);
+    color: var(--ink-credit); padding: 10px 14px; border-radius: 2px;
+    font-size: 12.5px; margin-top: 16px; max-width: 460px;
+  }
+  .save-flash a { color: var(--ink-credit); font-weight: 700; }
+
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+  }
+  .toolbar .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ghost-btn {
+    background: transparent; border: 1px solid var(--paper-line); color: var(--ink-black);
+    padding: 8px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    border-radius: 2px; cursor: pointer;
+  }
+  .ghost-btn:hover { border-color: var(--cover); }
+  .ghost-btn.danger:hover { border-color: var(--ink-debit); color: var(--ink-debit); }
+  input[type="file"].hidden-file { display: none; }
+
+  .search-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+  .search-row input {
+    max-width: 280px;
+  }
+
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; align-items: center; }
+  .filter-row .flabel {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--ink-faded); font-weight: 600; margin-right: 4px;
+  }
+  .chip {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; padding: 5px 11px;
+    border: 1px solid var(--paper-line); border-radius: 12px; background: transparent;
+    cursor: pointer; color: var(--ink-black);
+  }
+  .chip.active { background: var(--cover); color: var(--paper); border-color: var(--cover); }
+
+  /* party statement card */
+  .party-statement {
+    display: none;
+    background: #F7F2E4;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: none;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .party-statement.show { display: flex; }
+  .party-statement .name {
+    font-family: 'Merriweather', serif; font-weight: 700; font-size: 16px; color: var(--cover);
+  }
+  .party-statement .stat { text-align: center; }
+  .party-statement .stat .label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faded); font-weight: 600;
+  }
+  .party-statement .stat .val { font-family: 'Merriweather', serif; font-weight: 900; font-size: 16px; }
+  .party-statement .stat.credit .val { color: var(--ink-credit); }
+  .party-statement .stat.debit .val { color: var(--ink-debit); }
+  .party-statement .stat.net .val { color: var(--cover); }
+
+  .sheet-wrap { border: 1px solid var(--cover); overflow-x: auto; }
+  table.ledger { width: 100%; border-collapse: collapse; background: #FBF8EF; }
+  table.ledger thead th {
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--paper); font-weight: 700; padding: 9px 10px; background: var(--cover);
+    border-right: 1px solid rgba(237,230,211,0.15); white-space: nowrap;
+  }
+  table.ledger thead th.num { text-align: right; }
+  table.ledger tbody tr td {
+    padding: 8px 10px; font-size: 12.5px; border-right: 1px solid var(--paper-line);
+    border-bottom: 1px solid var(--paper-line); vertical-align: top;
+  }
+  table.ledger tbody tr:nth-child(even) td { background: rgba(184, 147, 90, 0.08); }
+  table.ledger tbody tr:hover td { background: rgba(184, 147, 90, 0.16); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.credit-amt { color: var(--ink-credit); font-weight: 600; }
+  td.debit-amt { color: var(--ink-debit); font-weight: 600; }
+  td.balance-cell { font-weight: 700; }
+  td.party { font-weight: 600; }
+  td.note { color: var(--ink-faded); font-size: 12px; }
+  td.actions-cell { text-align: center; white-space: nowrap; width: 56px; }
+  .row-btn {
+    background: none; border: none; cursor: pointer; color: var(--ink-faded);
+    font-size: 13px; line-height: 1; padding: 2px 4px;
+  }
+  .row-btn.edit:hover { color: var(--ink-credit); }
+  .row-btn.del:hover { color: var(--ink-debit); }
+
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--ink-faded);
+    font-family: 'Merriweather', serif; font-style: italic;
+  }
+
+  .all-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--paper-line); border: 1px solid var(--paper-line); margin-top: 16px;
+  }
+  .all-summary .cell { background: var(--paper); padding: 10px 16px; text-align: center; }
+  .all-summary .label {
+    font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-faded); font-weight: 600; margin-bottom: 4px;
+  }
+  .all-summary .value { font-family: 'Merriweather', serif; font-weight: 900; font-size: 18px; }
+  .all-summary .credit .value { color: var(--ink-credit); }
+  .all-summary .debit .value { color: var(--ink-debit); }
+  .all-summary .net .value { color: var(--cover); }
+
+  /* category auto-type badge */
+  .type-badge {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 10px;
+  }
+  .type-badge.credit { background: rgba(31,58,95,0.12); color: var(--ink-credit); }
+  .type-badge.debit { background: rgba(166,52,45,0.12); color: var(--ink-debit); }
+  .type-badge.none { background: rgba(0,0,0,0.05); color: var(--ink-faded); }
+
+  select.filter-select {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    padding: 6px 10px;
+    border: 1px solid var(--paper-line);
+    background: #F7F2E4;
+    border-radius: 2px;
+  }
+
+  /* month-end report */
+  .report-box {
+    background: #F7F2E4;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    padding: 20px 22px;
+    margin-top: 20px;
+  }
+  .report-box h3 {
+    font-family: 'Merriweather', serif; font-size: 16px; margin: 0 0 4px; color: var(--cover);
+  }
+  .report-sub { font-size: 12px; color: var(--ink-faded); margin-bottom: 16px; }
+  .report-picker {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .report-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: var(--paper-line); border: 1px solid var(--paper-line); margin-bottom: 18px;
+  }
+  .report-summary .cell { background: var(--paper); padding: 12px 16px; text-align: center; }
+  .report-summary .label {
+    font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-faded); font-weight: 600; margin-bottom: 6px;
+  }
+  .report-summary .value { font-family: 'Merriweather', serif; font-weight: 900; font-size: 19px; }
+  .report-summary .credit .value { color: var(--ink-credit); }
+  .report-summary .debit .value { color: var(--ink-debit); }
+  .report-summary .net .value { color: var(--cover); }
+  .category-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px dashed var(--paper-line); font-size: 12.5px;
+  }
+  .category-row:last-child { border-bottom: none; }
+  .category-row .cname { color: var(--ink-black); font-weight: 600; }
+  .category-row .cval { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .category-row .cval.debit { color: var(--ink-debit); }
+  .category-row .cval.credit { color: var(--ink-credit); }
+
+  /* ---------- Stock & Price section ---------- */
+  .stock-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-top: 8px;
+  }
+  .analysis-box {
+    background: #F7F2E4;
+    border: 1px solid var(--paper-line);
+    border-radius: 3px;
+    padding: 18px 20px;
+  }
+  .analysis-box h3 {
+    font-family: 'Merriweather', serif; font-size: 15px; margin: 0 0 12px; color: var(--cover);
+  }
+  .month-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px dashed var(--paper-line); font-size: 12px;
+  }
+  .month-row:last-child { border-bottom: none; }
+  .month-row .m { color: var(--ink-faded); width: 40px; }
+  .month-row .bar-wrap { flex: 1; height: 8px; background: rgba(0,0,0,0.06); margin: 0 10px; border-radius: 4px; overflow: hidden; }
+  .month-row .bar { height: 100%; background: var(--gold); }
+  .month-row .v { font-variant-numeric: tabular-nums; font-weight: 600; width: 60px; text-align: right; }
+
+  .signal-result {
+    margin-top: 14px; padding: 12px 14px; border-radius: 3px; font-size: 12.5px;
+    display: none; line-height: 1.5;
+  }
+  .signal-result.show { display: block; }
+  .signal-result.buy { background: rgba(31,58,95,0.1); border: 1px solid var(--ink-credit); color: var(--ink-credit); }
+  .signal-result.sell { background: rgba(166,52,45,0.1); border: 1px solid var(--ink-debit); color: var(--ink-debit); }
+  .signal-result.neutral { background: rgba(184,147,90,0.12); border: 1px solid var(--gold); color: var(--ink-black); }
+
+  @media (max-width: 760px) {
+    .stock-grid { grid-template-columns: 1fr; }
+    form.entry-form.two-col { grid-template-columns: 1fr; }
+    .field.span-2 { grid-column: span 1; }
+  }
+
+  @media (max-width: 640px) {
+    .page::before { left: 60px; }
+    .page { padding: 24px 18px 30px 26px; }
+    table.ledger { font-size: 11px; }
+    .all-summary { grid-template-columns: 1fr; }
+  }
+
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--cover); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div class="book">
+  <div class="spine" aria-hidden="true">
+    <div class="stitch"></div><div class="stitch"></div><div class="stitch"></div>
+    <div class="stitch"></div><div class="stitch"></div><div class="stitch"></div>
+    <div class="stitch"></div><div class="stitch"></div><div class="stitch"></div>
+  </div>
+
+  <div class="page">
+
+    <header class="masthead">
+      <div>
+        <h1>Khata</h1>
+        <div class="bangla">দৈনিক হিসাব খাতা — daily accounts ledger</div>
+      </div>
+      <div class="shopname-wrap">
+        <label for="shopName" style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faded);text-align:right;">Shop name</label>
+        <input id="shopName" type="text" placeholder="Enter shop name" value="">
+      </div>
+    </header>
+
+    <!-- ========== TOP-LEVEL LEDGER TYPE VIEW ========== -->
+    <section id="homeView">
+      <div class="entry-page-sub" style="margin-bottom:6px;">Choose which ledger you want to open.</div>
+      <div class="nav-cards two-col">
+        <button class="nav-card" id="goBiz">
+          <div class="num">1</div>
+          <div class="title">Business Ledger</div>
+          <div class="bangla-sub">ব্যবসার হিসাব</div>
+          <div class="desc">Customer entries, full ledger, and stock &amp; price tracking for your shop.</div>
+        </button>
+        <button class="nav-card" id="goPersonal">
+          <div class="num">2</div>
+          <div class="title">Personal Ledger</div>
+          <div class="bangla-sub">ব্যক্তিগত হিসাব</div>
+          <div class="desc">Track your own daily expenses — fuel, meals, recharge, and more.</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ========== BUSINESS LEDGER HOME VIEW ========== -->
+    <section id="bizHomeView" hidden>
+      <button class="back-link" data-back="home">&larr; Back</button>
+      <div class="nav-cards">
+        <button class="nav-card" id="goEntry">
+          <div class="num">1</div>
+          <div class="title">New Entry</div>
+          <div class="bangla-sub">নতুন হিসাব যোগ করুন</div>
+          <div class="desc">Add a credit or debit transaction for a customer.</div>
+        </button>
+        <button class="nav-card" id="goAll">
+          <div class="num">2</div>
+          <div class="title">All Entries</div>
+          <div class="bangla-sub">সব হিসাব দেখুন</div>
+          <div class="desc">Search, edit, export or import the full ledger.</div>
+        </button>
+        <button class="nav-card" id="goStock">
+          <div class="num">3</div>
+          <div class="title">Stock &amp; Price</div>
+          <div class="bangla-sub">মজুদ ও দাম</div>
+          <div class="desc">Log commodity buy/sell prices and see seasonal trends.</div>
+        </button>
+      </div>
+
+      <div class="home-summary">
+        <div class="cell credit">
+          <div class="label">Total Credit</div>
+          <div class="value" id="homeCredit">0</div>
+        </div>
+        <div class="cell debit">
+          <div class="label">Total Debit</div>
+          <div class="value" id="homeDebit">0</div>
+        </div>
+        <div class="cell net">
+          <div class="label">Net Balance</div>
+          <div class="value" id="homeNet">0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== NEW ENTRY VIEW ========== -->
+    <section id="entryView" hidden>
+      <button class="back-link" data-back="bizHome">&larr; Back</button>
+      <h2 class="entry-page-title" id="entryPageTitle">New Entry</h2>
+      <div class="entry-page-sub" id="entryPageSub">Add a credit (money received) or debit (money owed to you) transaction.</div>
+
+      <form class="entry-form" id="entryForm">
+        <input type="hidden" id="editingId" value="">
+        <div class="field">
+          <label for="dateInput">Date</label>
+          <input id="dateInput" type="date" required>
+        </div>
+        <div class="field">
+          <label for="partyInput">Party / customer</label>
+          <input id="partyInput" list="partyList" type="text" placeholder="e.g. Karim Mia" required>
+          <datalist id="partyList"></datalist>
+        </div>
+        <div class="field">
+          <label for="commodityInput">Commodity (optional)</label>
+          <input id="commodityInput" list="ledgerCommodityList" type="text" placeholder="e.g. Onion, Lentil, Rice">
+          <datalist id="ledgerCommodityList"></datalist>
+        </div>
+        <div class="field">
+          <label for="amountInput">Amount (৳)</label>
+          <input id="amountInput" type="number" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <div class="type-toggle">
+            <button type="button" id="typeCredit" class="active credit">CREDIT</button>
+            <button type="button" id="typeDebit" class="debit">DEBIT</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="noteInput">Note</label>
+          <input id="noteInput" type="text" placeholder="optional">
+        </div>
+        <div class="form-btn-row">
+          <button type="submit" class="add-btn" id="submitBtnLabel">+ Add Entry</button>
+          <button type="button" class="cancel-btn" id="cancelEditBtn" hidden>Cancel edit</button>
+        </div>
+      </form>
+
+      <div class="save-flash" id="saveFlash">
+        Saved. <a href="#" id="goAllFromFlash">View all entries &rarr;</a>
+      </div>
+    </section>
+
+    <!-- ========== ALL ENTRIES VIEW ========== -->
+    <section id="allView" hidden>
+      <button class="back-link" data-back="bizHome">&larr; Back</button>
+      <h2 class="entry-page-title">All Entries</h2>
+      <div class="entry-page-sub">Search, edit, filter by party, or export / import as Excel.</div>
+
+      <div class="toolbar">
+        <div class="search-row">
+          <input id="searchInput" type="text" placeholder="Search party, commodity or note...">
+          <select id="commodityFilterSelect" class="filter-select">
+            <option value="__all__">All commodities</option>
+          </select>
+        </div>
+        <div class="buttons">
+          <button class="ghost-btn" id="exportBtn">⬇ Export Excel</button>
+          <button class="ghost-btn" id="importBtn">⬆ Import Excel</button>
+          <input type="file" id="importFileInput" class="hidden-file" accept=".xlsx,.xls,.csv">
+          <button class="ghost-btn" id="printBtn">Print</button>
+          <button class="ghost-btn danger" id="clearBtn">Clear all</button>
+        </div>
+      </div>
+
+      <div class="filter-row" id="filterRow">
+        <span class="flabel">Show:</span>
+        <button class="chip active" data-party="__all__">All parties</button>
+      </div>
+
+      <div class="party-statement" id="partyStatement">
+        <div class="name" id="psName"></div>
+        <div class="stat credit"><div class="label">Credit</div><div class="val" id="psCredit">0</div></div>
+        <div class="stat debit"><div class="label">Debit</div><div class="val" id="psDebit">0</div></div>
+        <div class="stat net"><div class="label">Balance</div><div class="val" id="psNet">0</div></div>
+      </div>
+
+      <div class="sheet-wrap">
+        <table class="ledger" id="ledgerTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Party</th>
+              <th>Commodity</th>
+              <th>Note</th>
+              <th class="num">Credit</th>
+              <th class="num">Debit</th>
+              <th class="num">Balance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        No entries yet — go to "New Entry" to add your first transaction.
+      </div>
+
+      <div class="all-summary">
+        <div class="cell credit"><div class="label">Total Credit</div><div class="value" id="totalCredit">0</div></div>
+        <div class="cell debit"><div class="label">Total Debit</div><div class="value" id="totalDebit">0</div></div>
+        <div class="cell net"><div class="label">Net Balance</div><div class="value" id="netBalance">0</div></div>
+      </div>
+    </section>
+
+    <!-- ========== STOCK & PRICE VIEW ========== -->
+    <section id="stockView" hidden>
+      <button class="back-link" data-back="bizHome">&larr; Back</button>
+      <h2 class="entry-page-title">Stock &amp; Price</h2>
+      <div class="entry-page-sub">Log commodity buy/sell prices to see seasonal trends and buy/sell signals.</div>
+
+      <form class="entry-form two-col" id="stockForm">
+        <div class="field">
+          <label for="stockDate">Date</label>
+          <input id="stockDate" type="date" required>
+        </div>
+        <div class="field">
+          <label for="stockCommodity">Commodity</label>
+          <input id="stockCommodity" list="commodityList" type="text" placeholder="e.g. Onion, Lentil, Rice" required>
+          <datalist id="commodityList"></datalist>
+        </div>
+        <div class="field">
+          <label for="stockBuyPrice">Buy price (per kg/maund)</label>
+          <input id="stockBuyPrice" type="number" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label for="stockSellPrice">Sell price (optional)</label>
+          <input id="stockSellPrice" type="number" step="0.01" min="0" placeholder="leave blank if not sold">
+        </div>
+        <div class="field">
+          <label for="stockQty">Quantity (kg/maund)</label>
+          <input id="stockQty" type="number" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label for="stockNote">Note</label>
+          <input id="stockNote" type="text" placeholder="optional">
+        </div>
+        <div class="form-btn-row span-2" style="grid-column:span 2;">
+          <button type="submit" class="add-btn">+ Add Stock Entry</button>
+        </div>
+      </form>
+
+      <div class="save-flash" id="stockSaveFlash" style="max-width:none;">Saved.</div>
+
+      <hr style="border:none;border-top:1px dashed var(--paper-line);margin:28px 0;">
+
+      <div class="toolbar">
+        <div class="filter-row" id="stockFilterRow" style="margin-bottom:0;">
+          <span class="flabel">Show:</span>
+          <button class="chip active" data-commodity="__all__">All commodities</button>
+        </div>
+        <div class="buttons">
+          <button class="ghost-btn" id="stockExportBtn">⬇ Export Excel</button>
+          <button class="ghost-btn" id="stockImportBtn">⬆ Import Excel</button>
+          <input type="file" id="stockImportFileInput" class="hidden-file" accept=".xlsx,.xls,.csv">
+          <button class="ghost-btn danger" id="stockClearBtn">Clear all</button>
+        </div>
+      </div>
+
+      <div class="sheet-wrap" style="margin-top:14px;">
+        <table class="ledger" id="stockTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Commodity</th>
+              <th class="num">Buy</th>
+              <th class="num">Sell</th>
+              <th class="num">Qty</th>
+              <th class="num">Profit</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="stockEmptyState" style="display:none;">
+        No stock entries yet — add your first buy/sell record above.
+      </div>
+
+      <div class="stock-grid">
+        <div class="analysis-box">
+          <h3>Seasonal average by month</h3>
+          <div class="field" style="margin-bottom:10px;">
+            <label for="analysisCommodity">Commodity</label>
+            <select id="analysisCommodity"><option value="">— select —</option></select>
+          </div>
+          <div id="seasonalList"></div>
+        </div>
+
+        <div class="analysis-box">
+          <h3>Buy / sell signal</h3>
+          <div class="field" style="margin-bottom:10px;">
+            <label for="signalPrice">Today's price you're seeing</label>
+            <input id="signalPrice" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <button class="ghost-btn" id="checkSignalBtn">Check signal</button>
+          <div class="signal-result" id="signalResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== DAILY EXPENSES VIEW ========== -->
+    <section id="expenseView" hidden>
+      <button class="back-link" data-back="home">&larr; Back</button>
+      <h2 class="entry-page-title">Daily Expenses</h2>
+      <div class="entry-page-sub">Pick a category — the system decides debit (expense) or credit (income) automatically.</div>
+
+      <form class="entry-form" id="expenseForm">
+        <div class="field">
+          <label for="expenseDate">Date</label>
+          <input id="expenseDate" type="date" required>
+        </div>
+        <div class="field">
+          <label for="expenseCategory">Category</label>
+          <select id="expenseCategory" required></select>
+          <span class="type-badge none" id="expenseTypeBadge">Select a category</span>
+        </div>
+        <div class="field">
+          <label for="expenseAmount">Amount (৳)</label>
+          <input id="expenseAmount" type="number" step="0.01" min="0" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label for="expenseNote">Note</label>
+          <input id="expenseNote" type="text" placeholder="optional">
+        </div>
+        <div class="form-btn-row">
+          <button type="submit" class="add-btn" id="expenseSubmitLabel">+ Add Expense</button>
+          <button type="button" class="cancel-btn" id="expenseCancelBtn" hidden>Cancel edit</button>
+        </div>
+        <input type="hidden" id="editingExpenseId" value="">
+      </form>
+
+      <div class="save-flash" id="expenseSaveFlash">Saved.</div>
+
+      <hr style="border:none;border-top:1px dashed var(--paper-line);margin:28px 0;">
+
+      <div class="toolbar">
+        <div class="search-row">
+          <input id="expenseSearchInput" type="text" placeholder="Search category or note...">
+        </div>
+        <div class="buttons">
+          <button class="ghost-btn" id="expenseExportBtn">⬇ Export Excel</button>
+          <button class="ghost-btn" id="expenseImportBtn">⬆ Import Excel</button>
+          <input type="file" id="expenseImportFileInput" class="hidden-file" accept=".xlsx,.xls,.csv">
+          <button class="ghost-btn danger" id="expenseClearBtn">Clear all</button>
+        </div>
+      </div>
+
+      <div class="sheet-wrap">
+        <table class="ledger" id="expenseTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th class="num">Amount</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="expenseBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="expenseEmptyState" style="display:none;">
+        No expenses logged yet — add your first one above.
+      </div>
+
+      <div class="all-summary">
+        <div class="cell credit"><div class="label">Total Credit (income)</div><div class="value" id="expTotalCredit">0</div></div>
+        <div class="cell debit"><div class="label">Total Debit (expense)</div><div class="value" id="expTotalDebit">0</div></div>
+        <div class="cell net"><div class="label">Net</div><div class="value" id="expTotalNet">0</div></div>
+      </div>
+
+      <div class="report-box">
+        <h3>Month-end report</h3>
+        <div class="report-sub">Pick a month to see its income vs expense breakdown.</div>
+        <div class="report-picker">
+          <input type="month" id="reportMonth">
+          <button class="ghost-btn" id="printReportBtn">Print this report</button>
+        </div>
+        <div class="report-summary">
+          <div class="cell credit"><div class="label">Credit (income)</div><div class="value" id="reportCredit">0</div></div>
+          <div class="cell debit"><div class="label">Debit (expense)</div><div class="value" id="reportDebit">0</div></div>
+          <div class="cell net"><div class="label">Net profit/loss</div><div class="value" id="reportNet">0</div></div>
+        </div>
+        <div id="reportCategoryBreakdown"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  const LEDGER_KEY = 'khata_ledger_entries_v1';
+  const STOCK_KEY = 'khata_stock_entries_v1';
+  const EXPENSE_KEY = 'khata_expense_entries_v1';
+  const SHOP_KEY = 'khata_ledger_shopname_v1';
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  let entries = [];
+  let stockEntries = [];
+  let expenseEntries = [];
+  let currentType = 'credit';
+  let activeFilter = '__all__';
+  let activeCommodityFilter = '__all__';
+  let ledgerCommodityFilter = '__all__';
+  let searchTerm = '';
+  let expenseSearchTerm = '';
+  let editingId = null;
+  let editingExpenseId = null;
+
+  const EXPENSE_CATEGORIES = {
+    'Rent': 'debit',
+    'Electricity / Utility': 'debit',
+    'Transport': 'debit',
+    'Fuel Cost': 'debit',
+    'Meal Cost': 'debit',
+    'Mobile Recharge': 'debit',
+    'Festival Cost': 'debit',
+    'Groceries': 'debit',
+    'Education / Tuition': 'debit',
+    'Medical / Health': 'debit',
+    'Labor / Wages': 'debit',
+    'Loading / Unloading': 'debit',
+    'Shop Maintenance': 'debit',
+    'Other Expense': 'debit',
+    'Extra Income': 'credit',
+    'Refund Received': 'credit',
+    'Other Income': 'credit'
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- View switching ----------
+  function showView(name, fromPopState) {
+    $('homeView').hidden = name !== 'home';
+    $('bizHomeView').hidden = name !== 'bizHome';
+    $('entryView').hidden = name !== 'entry';
+    $('allView').hidden = name !== 'all';
+    $('stockView').hidden = name !== 'stock';
+    $('expenseView').hidden = name !== 'expense';
+
+    if (!fromPopState) {
+      if (history.state && history.state.view === name) {
+        history.replaceState({ view: name }, '', '#' + name);
+      } else {
+        history.pushState({ view: name }, '', '#' + name);
+      }
+    }
+
+    if (name === 'bizHome') renderHomeSummary();
+    if (name === 'entry' && editingId === null) {
+      $('saveFlash').style.display = 'none';
+      $('dateInput').value = todayStr();
+      $('partyInput').focus();
+    }
+    if (name === 'all') { render(); $('searchInput').focus(); }
+    if (name === 'stock') { renderStock(); $('stockDate').value = todayStr(); }
+    if (name === 'expense') {
+      renderExpenses();
+      if (editingExpenseId === null) $('expenseDate').value = todayStr();
+      if (!$('reportMonth').value) $('reportMonth').value = todayStr().slice(0, 7);
+      renderMonthReport();
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  window.addEventListener('popstate', (e) => {
+    const name = (e.state && e.state.view) || 'home';
+    resetEntryForm(); resetExpenseForm();
+    showView(name, true);
+  });
+  $('goBiz').addEventListener('click', () => showView('bizHome'));
+  $('goPersonal').addEventListener('click', () => { resetExpenseForm(); showView('expense'); });
+  $('goEntry').addEventListener('click', () => { resetEntryForm(); showView('entry'); });
+  $('goAll').addEventListener('click', () => showView('all'));
+  $('goStock').addEventListener('click', () => showView('stock'));
+  $('goAllFromFlash').addEventListener('click', (e) => { e.preventDefault(); showView('all'); });
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      resetEntryForm(); resetExpenseForm();
+      if (history.state && history.state.view) {
+        history.back();
+      } else {
+        showView(btn.dataset.back || 'home');
+      }
+    });
+  });
+
+  // ---------- Data load/save ----------
+  function loadData() {
+    try { entries = JSON.parse(localStorage.getItem(LEDGER_KEY)) || []; } catch (e) { entries = []; }
+    try { stockEntries = JSON.parse(localStorage.getItem(STOCK_KEY)) || []; } catch (e) { stockEntries = []; }
+    try { expenseEntries = JSON.parse(localStorage.getItem(EXPENSE_KEY)) || []; } catch (e) { expenseEntries = []; }
+    const shop = localStorage.getItem(SHOP_KEY);
+    if (shop) $('shopName').value = shop;
+  }
+  function saveData() { localStorage.setItem(LEDGER_KEY, JSON.stringify(entries)); }
+  function saveStock() { localStorage.setItem(STOCK_KEY, JSON.stringify(stockEntries)); }
+  function saveExpenses() { localStorage.setItem(EXPENSE_KEY, JSON.stringify(expenseEntries)); }
+
+  function fmt(n) {
+    return Number(n).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function nextId() { return Date.now() + Math.random(); }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function uniqueParties() { return [...new Set(entries.map(e => e.party))].sort(); }
+  function uniqueCommodities() { return [...new Set(stockEntries.map(e => e.commodity))].sort(); }
+  function uniqueLedgerCommodities() {
+    return [...new Set(entries.map(e => e.commodity).filter(Boolean).concat(uniqueCommodities()))].sort();
+  }
+
+  // ---------- Home summary ----------
+  function renderHomeSummary() {
+    const totalCredit = entries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    $('homeCredit').textContent = fmt(totalCredit);
+    $('homeDebit').textContent = fmt(totalDebit);
+    $('homeNet').textContent = fmt(totalCredit - totalDebit);
+  }
+
+  // ================= LEDGER: All Entries =================
+  function renderPartyList() {
+    const list = $('partyList');
+    list.innerHTML = '';
+    uniqueParties().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      list.appendChild(opt);
+    });
+
+    const cList = $('ledgerCommodityList');
+    cList.innerHTML = '';
+    uniqueLedgerCommodities().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      cList.appendChild(opt);
+    });
+
+    const sel = $('commodityFilterSelect');
+    const current = sel.value;
+    sel.innerHTML = '<option value="__all__">All commodities</option>';
+    uniqueLedgerCommodities().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    if ([...sel.options].some(o => o.value === current)) sel.value = current;
+  }
+
+  function renderFilterChips() {
+    const row = $('filterRow');
+    const parties = uniqueParties();
+    row.innerHTML = '<span class="flabel">Show:</span>';
+
+    const allChip = document.createElement('button');
+    allChip.className = 'chip' + (activeFilter === '__all__' ? ' active' : '');
+    allChip.textContent = 'All parties';
+    allChip.onclick = () => { activeFilter = '__all__'; render(); };
+    row.appendChild(allChip);
+
+    parties.forEach(p => {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (activeFilter === p ? ' active' : '');
+      chip.textContent = p;
+      chip.onclick = () => { activeFilter = p; render(); };
+      row.appendChild(chip);
+    });
+  }
+
+  function renderPartyStatement(filtered) {
+    const box = $('partyStatement');
+    if (activeFilter === '__all__') { box.classList.remove('show'); return; }
+    const credit = filtered.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const debit = filtered.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    $('psName').textContent = activeFilter;
+    $('psCredit').textContent = fmt(credit);
+    $('psDebit').textContent = fmt(debit);
+    $('psNet').textContent = fmt(credit - debit);
+    box.classList.add('show');
+  }
+
+  function matchesSearch(e) {
+    if (!searchTerm) return true;
+    const t = searchTerm.toLowerCase();
+    return e.party.toLowerCase().includes(t) || (e.note || '').toLowerCase().includes(t) || (e.commodity || '').toLowerCase().includes(t);
+  }
+  function matchesCommodityFilter(e) {
+    return ledgerCommodityFilter === '__all__' || e.commodity === ledgerCommodityFilter;
+  }
+
+  function renderTable() {
+    const body = $('ledgerBody');
+    const empty = $('emptyState');
+    body.innerHTML = '';
+
+    const filtered = entries
+      .filter(e => activeFilter === '__all__' || e.party === activeFilter)
+      .filter(matchesCommodityFilter)
+      .filter(matchesSearch)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+
+    renderPartyStatement(filtered);
+
+    if (filtered.length === 0) {
+      empty.style.display = 'block';
+      $('ledgerTable').closest('.sheet-wrap').style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    $('ledgerTable').closest('.sheet-wrap').style.display = 'block';
+
+    let running = 0;
+    filtered.forEach(e => {
+      running += e.type === 'credit' ? e.amount : -e.amount;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td class="party">${escapeHtml(e.party)}</td>
+        <td class="note">${escapeHtml(e.commodity || '')}</td>
+        <td class="note">${escapeHtml(e.note || '')}</td>
+        <td class="num credit-amt">${e.type === 'credit' ? fmt(e.amount) : ''}</td>
+        <td class="num debit-amt">${e.type === 'debit' ? fmt(e.amount) : ''}</td>
+        <td class="num balance-cell">${fmt(running)}</td>
+        <td class="actions-cell">
+          <button class="row-btn edit" title="Edit" data-id="${e.id}">✎</button>
+          <button class="row-btn del" title="Delete" data-id="${e.id}">×</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll('.row-btn.del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        entries = entries.filter(e => e.id !== id);
+        saveData();
+        render();
+      });
+    });
+    body.querySelectorAll('.row-btn.edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        const e = entries.find(x => x.id === id);
+        if (!e) return;
+        editingId = id;
+        $('editingId').value = id;
+        $('dateInput').value = e.date;
+        $('partyInput').value = e.party;
+        $('commodityInput').value = e.commodity || '';
+        $('amountInput').value = e.amount;
+        $('noteInput').value = e.note || '';
+        setType(e.type);
+        $('entryPageTitle').textContent = 'Edit Entry';
+        $('entryPageSub').textContent = 'Update this transaction.';
+        $('submitBtnLabel').textContent = 'Save changes';
+        $('cancelEditBtn').hidden = false;
+        showView('entry');
+      });
+    });
+  }
+
+  function renderAllSummary() {
+    const totalCredit = entries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    $('totalCredit').textContent = fmt(totalCredit);
+    $('totalDebit').textContent = fmt(totalDebit);
+    $('netBalance').textContent = fmt(totalCredit - totalDebit);
+  }
+
+  function render() {
+    renderPartyList();
+    renderFilterChips();
+    renderTable();
+    renderAllSummary();
+    renderHomeSummary();
+  }
+
+  $('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value; renderTable(); });
+  $('commodityFilterSelect').addEventListener('change', (e) => { ledgerCommodityFilter = e.target.value; renderTable(); });
+
+  // ---------- Type toggle ----------
+  $('typeCredit').addEventListener('click', () => setType('credit'));
+  $('typeDebit').addEventListener('click', () => setType('debit'));
+  function setType(t) {
+    currentType = t;
+    $('typeCredit').classList.toggle('active', t === 'credit');
+    $('typeDebit').classList.toggle('active', t === 'debit');
+  }
+
+  function resetEntryForm() {
+    editingId = null;
+    $('editingId').value = '';
+    $('entryForm').reset();
+    $('dateInput').value = todayStr();
+    $('commodityInput').value = '';
+    setType('credit');
+    $('entryPageTitle').textContent = 'New Entry';
+    $('entryPageSub').textContent = 'Add a credit (money received) or debit (money owed to you) transaction.';
+    $('submitBtnLabel').textContent = '+ Add Entry';
+    $('cancelEditBtn').hidden = true;
+    $('saveFlash').style.display = 'none';
+  }
+  $('cancelEditBtn').addEventListener('click', () => { resetEntryForm(); showView('all'); });
+
+  // ---------- Form submit (add or edit) ----------
+  $('entryForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const date = $('dateInput').value || todayStr();
+    const party = $('partyInput').value.trim();
+    const commodity = $('commodityInput').value.trim();
+    const amount = parseFloat($('amountInput').value);
+    const note = $('noteInput').value.trim();
+    if (!party || isNaN(amount) || amount <= 0) return;
+
+    if (editingId !== null) {
+      const idx = entries.findIndex(e => e.id === editingId);
+      if (idx !== -1) {
+        entries[idx] = { ...entries[idx], date, party, commodity, amount, type: currentType, note };
+      }
+      saveData();
+      renderHomeSummary();
+      resetEntryForm();
+      showView('all');
+      return;
+    }
+
+    entries.push({ id: nextId(), date, party, commodity, amount, type: currentType, note });
+    saveData();
+
+    $('partyInput').value = '';
+    $('commodityInput').value = '';
+    $('amountInput').value = '';
+    $('noteInput').value = '';
+    $('saveFlash').style.display = 'block';
+    $('partyInput').focus();
+    renderHomeSummary();
+  });
+
+  // ---------- Shop name persistence ----------
+  $('shopName').addEventListener('input', () => localStorage.setItem(SHOP_KEY, $('shopName').value));
+
+  // ---------- Ledger: Export / Import Excel ----------
+  $('exportBtn').addEventListener('click', () => {
+    if (entries.length === 0) { alert('No entries to export yet.'); return; }
+    const rows = entries.slice().sort((a, b) => a.date.localeCompare(b.date))
+      .map(e => ({ Date: e.date, Party: e.party, Commodity: e.commodity || '', Type: e.type, Amount: e.amount, Note: e.note || '' }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 16 }, { wch: 10 }, { wch: 12 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Ledger');
+    XLSX.writeFile(wb, 'khata_ledger.xlsx');
+  });
+
+  $('importBtn').addEventListener('click', () => $('importFileInput').click());
+  $('importFileInput').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        const imported = [];
+        for (const row of rows) {
+          const party = String(row.Party || row.party || '').trim();
+          const commodity = String(row.Commodity || row.commodity || '').trim();
+          const typeRaw = String(row.Type || row.type || '').trim().toLowerCase();
+          const amount = parseFloat(row.Amount || row.amount);
+          if (!party || isNaN(amount) || amount <= 0) continue;
+          let dateVal = row.Date || row.date || todayStr();
+          dateVal = dateVal instanceof Date ? dateVal.toISOString().slice(0, 10) : String(dateVal).slice(0, 10);
+          imported.push({ id: nextId(), date: dateVal, party, commodity, amount, type: typeRaw === 'debit' ? 'debit' : 'credit', note: String(row.Note || row.note || '') });
+        }
+        if (imported.length === 0) { alert('No valid rows found. Expected columns: Date, Party, Type, Amount, Note.'); return; }
+        const replace = confirm(`Found ${imported.length} valid row(s).\n\nOK = REPLACE all current entries.\nCancel = ADD to existing entries.`);
+        entries = replace ? imported : entries.concat(imported);
+        saveData();
+        render();
+        alert(`Import complete: ${imported.length} row(s) ${replace ? 'loaded' : 'added'}.`);
+      } catch (err) {
+        alert('Could not read this file. Make sure it is a valid Excel or CSV file.');
+      } finally { ev.target.value = ''; }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  $('printBtn').addEventListener('click', () => window.print());
+  $('clearBtn').addEventListener('click', () => {
+    if (confirm('This will permanently delete all ledger entries. Continue?')) {
+      entries = []; saveData(); activeFilter = '__all__'; searchTerm = ''; $('searchInput').value = ''; render();
+    }
+  });
+
+  // ================= STOCK & PRICE =================
+  function renderCommodityList() {
+    const list = $('commodityList');
+    list.innerHTML = '';
+    uniqueCommodities().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      list.appendChild(opt);
+    });
+  }
+
+  function renderStockFilterChips() {
+    const row = $('stockFilterRow');
+    const commodities = uniqueCommodities();
+    row.innerHTML = '<span class="flabel">Show:</span>';
+    const allChip = document.createElement('button');
+    allChip.className = 'chip' + (activeCommodityFilter === '__all__' ? ' active' : '');
+    allChip.textContent = 'All commodities';
+    allChip.onclick = () => { activeCommodityFilter = '__all__'; renderStock(); };
+    row.appendChild(allChip);
+    commodities.forEach(c => {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (activeCommodityFilter === c ? ' active' : '');
+      chip.textContent = c;
+      chip.onclick = () => { activeCommodityFilter = c; renderStock(); };
+      row.appendChild(chip);
+    });
+  }
+
+  function renderStockTable() {
+    const body = $('stockBody');
+    const empty = $('stockEmptyState');
+    body.innerHTML = '';
+    const filtered = stockEntries
+      .filter(e => activeCommodityFilter === '__all__' || e.commodity === activeCommodityFilter)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (filtered.length === 0) {
+      empty.style.display = 'block';
+      $('stockTable').closest('.sheet-wrap').style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    $('stockTable').closest('.sheet-wrap').style.display = 'block';
+
+    filtered.forEach(e => {
+      const profit = (e.sellPrice != null && e.sellPrice !== '') ? (e.sellPrice - e.buyPrice) * e.quantity : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td class="party">${escapeHtml(e.commodity)}</td>
+        <td class="num">${fmt(e.buyPrice)}</td>
+        <td class="num">${e.sellPrice != null && e.sellPrice !== '' ? fmt(e.sellPrice) : '-'}</td>
+        <td class="num">${fmt(e.quantity)}</td>
+        <td class="num ${profit != null ? (profit >= 0 ? 'credit-amt' : 'debit-amt') : ''}">${profit != null ? fmt(profit) : '-'}</td>
+        <td class="note">${escapeHtml(e.note || '')}</td>
+        <td class="actions-cell"><button class="row-btn del" title="Delete" data-id="${e.id}">×</button></td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll('.row-btn.del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        stockEntries = stockEntries.filter(e => e.id !== id);
+        saveStock();
+        renderStock();
+      });
+    });
+  }
+
+  function renderAnalysisCommodityOptions() {
+    const sel = $('analysisCommodity');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— select —</option>';
+    uniqueCommodities().forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    if (uniqueCommodities().includes(current)) sel.value = current;
+  }
+
+  function seasonalAverages(commodity) {
+    const byMonth = {};
+    stockEntries.filter(e => e.commodity === commodity).forEach(e => {
+      const m = new Date(e.date + 'T00:00:00').getMonth() + 1;
+      if (!byMonth[m]) byMonth[m] = [];
+      byMonth[m].push(e.buyPrice);
+    });
+    const result = {};
+    for (let m = 1; m <= 12; m++) {
+      if (byMonth[m] && byMonth[m].length) {
+        const avg = byMonth[m].reduce((a, b) => a + b, 0) / byMonth[m].length;
+        result[m] = { avg, count: byMonth[m].length };
+      }
+    }
+    return result;
+  }
+
+  function renderSeasonalList() {
+    const commodity = $('analysisCommodity').value;
+    const box = $('seasonalList');
+    if (!commodity) { box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">Select a commodity above.</div>'; return; }
+    const seasonal = seasonalAverages(commodity);
+    const months = Object.keys(seasonal);
+    if (months.length === 0) { box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">No data logged yet for this commodity.</div>'; return; }
+    const maxAvg = Math.max(...months.map(m => seasonal[m].avg));
+    box.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+      if (!seasonal[m]) continue;
+      const pct = (seasonal[m].avg / maxAvg) * 100;
+      const row = document.createElement('div');
+      row.className = 'month-row';
+      row.innerHTML = `
+        <div class="m">${MONTH_NAMES[m-1]}</div>
+        <div class="bar-wrap"><div class="bar" style="width:${pct}%;"></div></div>
+        <div class="v">${fmt(seasonal[m].avg)}</div>
+      `;
+      box.appendChild(row);
+    }
+  }
+  $('analysisCommodity').addEventListener('change', renderSeasonalList);
+
+  $('checkSignalBtn').addEventListener('click', () => {
+    const commodity = $('analysisCommodity').value;
+    const price = parseFloat($('signalPrice').value);
+    const box = $('signalResult');
+    if (!commodity) { alert('Select a commodity in the panel on the left first.'); return; }
+    if (isNaN(price) || price <= 0) { alert('Enter a valid price.'); return; }
+
+    const seasonal = seasonalAverages(commodity);
+    const currentMonth = new Date().getMonth() + 1;
+    const data = seasonal[currentMonth];
+
+    box.classList.remove('buy', 'sell', 'neutral');
+    if (!data) {
+      box.textContent = `No historical data for ${commodity} in ${MONTH_NAMES[currentMonth-1]} yet. Log a few more entries to get a signal.`;
+      box.classList.add('neutral');
+      box.classList.add('show');
+      return;
+    }
+    const diffPct = ((price - data.avg) / data.avg) * 100;
+    let verdict, cls;
+    if (diffPct <= -10) { verdict = 'GOOD TIME TO BUY — price is notably below the seasonal average.'; cls = 'buy'; }
+    else if (diffPct >= 10) { verdict = 'GOOD TIME TO SELL — price is notably above the seasonal average.'; cls = 'sell'; }
+    else { verdict = 'Price looks normal for this time of year — no strong signal.'; cls = 'neutral'; }
+
+    box.innerHTML = `${commodity} in ${MONTH_NAMES[currentMonth-1]}: historical avg = ${fmt(data.avg)} (from ${data.count} record(s)), today's price = ${fmt(price)} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)<br><strong>${verdict}</strong>`;
+    box.classList.add(cls, 'show');
+  });
+
+  function renderStock() {
+    renderCommodityList();
+    renderStockFilterChips();
+    renderStockTable();
+    renderAnalysisCommodityOptions();
+    renderSeasonalList();
+  }
+
+  $('stockForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const date = $('stockDate').value || todayStr();
+    const commodity = $('stockCommodity').value.trim();
+    const buyPrice = parseFloat($('stockBuyPrice').value);
+    const sellRaw = $('stockSellPrice').value;
+    const sellPrice = sellRaw === '' ? null : parseFloat(sellRaw);
+    const quantity = parseFloat($('stockQty').value);
+    const note = $('stockNote').value.trim();
+    if (!commodity || isNaN(buyPrice) || buyPrice <= 0 || isNaN(quantity) || quantity <= 0) return;
+
+    stockEntries.push({ id: nextId(), date, commodity, buyPrice, sellPrice, quantity, note });
+    saveStock();
+
+    $('stockCommodity').value = '';
+    $('stockBuyPrice').value = '';
+    $('stockSellPrice').value = '';
+    $('stockQty').value = '';
+    $('stockNote').value = '';
+    $('stockSaveFlash').style.display = 'block';
+    setTimeout(() => { $('stockSaveFlash').style.display = 'none'; }, 2500);
+
+    renderStock();
+  });
+
+  $('stockExportBtn').addEventListener('click', () => {
+    if (stockEntries.length === 0) { alert('No stock entries to export yet.'); return; }
+    const rows = stockEntries.slice().sort((a, b) => a.date.localeCompare(b.date))
+      .map(e => ({ Date: e.date, Commodity: e.commodity, BuyPrice: e.buyPrice, SellPrice: e.sellPrice ?? '', Quantity: e.quantity, Note: e.note || '' }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Stock');
+    XLSX.writeFile(wb, 'khata_stock.xlsx');
+  });
+
+  $('stockImportBtn').addEventListener('click', () => $('stockImportFileInput').click());
+  $('stockImportFileInput').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        const imported = [];
+        for (const row of rows) {
+          const commodity = String(row.Commodity || row.commodity || '').trim();
+          const buyPrice = parseFloat(row.BuyPrice || row.buyPrice || row['Buy Price']);
+          const quantity = parseFloat(row.Quantity || row.quantity);
+          if (!commodity || isNaN(buyPrice) || buyPrice <= 0 || isNaN(quantity) || quantity <= 0) continue;
+          const sellRaw = row.SellPrice ?? row.sellPrice ?? row['Sell Price'];
+          const sellPrice = sellRaw === '' || sellRaw === undefined ? null : parseFloat(sellRaw);
+          let dateVal = row.Date || row.date || todayStr();
+          dateVal = dateVal instanceof Date ? dateVal.toISOString().slice(0, 10) : String(dateVal).slice(0, 10);
+          imported.push({ id: nextId(), date: dateVal, commodity, buyPrice, sellPrice: isNaN(sellPrice) ? null : sellPrice, quantity, note: String(row.Note || row.note || '') });
+        }
+        if (imported.length === 0) { alert('No valid rows found. Expected columns: Date, Commodity, BuyPrice, SellPrice, Quantity, Note.'); return; }
+        const replace = confirm(`Found ${imported.length} valid row(s).\n\nOK = REPLACE all current stock entries.\nCancel = ADD to existing entries.`);
+        stockEntries = replace ? imported : stockEntries.concat(imported);
+        saveStock();
+        renderStock();
+        alert(`Import complete: ${imported.length} row(s) ${replace ? 'loaded' : 'added'}.`);
+      } catch (err) {
+        alert('Could not read this file. Make sure it is a valid Excel or CSV file.');
+      } finally { ev.target.value = ''; }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  $('stockClearBtn').addEventListener('click', () => {
+    if (confirm('This will permanently delete all stock entries. Continue?')) {
+      stockEntries = []; saveStock(); activeCommodityFilter = '__all__'; renderStock();
+    }
+  });
+
+  // ================= DAILY EXPENSES =================
+  function populateCategorySelect() {
+    const sel = $('expenseCategory');
+    sel.innerHTML = '<option value="">— select —</option>';
+    Object.keys(EXPENSE_CATEGORIES).forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat; opt.textContent = cat;
+      sel.appendChild(opt);
+    });
+  }
+
+  function updateExpenseTypeBadge() {
+    const cat = $('expenseCategory').value;
+    const badge = $('expenseTypeBadge');
+    if (!cat) {
+      badge.textContent = 'Select a category';
+      badge.className = 'type-badge none';
+      return;
+    }
+    const type = EXPENSE_CATEGORIES[cat];
+    badge.textContent = type === 'debit' ? '→ Debit (expense)' : '→ Credit (income)';
+    badge.className = 'type-badge ' + type;
+  }
+  $('expenseCategory').addEventListener('change', updateExpenseTypeBadge);
+
+  function resetExpenseForm() {
+    editingExpenseId = null;
+    $('editingExpenseId').value = '';
+    $('expenseForm').reset();
+    $('expenseDate').value = todayStr();
+    updateExpenseTypeBadge();
+    $('expenseSubmitLabel').textContent = '+ Add Expense';
+    $('expenseCancelBtn').hidden = true;
+    $('expenseSaveFlash').style.display = 'none';
+  }
+  $('expenseCancelBtn').addEventListener('click', () => { resetExpenseForm(); showView('expense'); });
+
+  $('expenseForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const date = $('expenseDate').value || todayStr();
+    const category = $('expenseCategory').value;
+    const amount = parseFloat($('expenseAmount').value);
+    const note = $('expenseNote').value.trim();
+    if (!category || isNaN(amount) || amount <= 0) return;
+    const type = EXPENSE_CATEGORIES[category] || 'debit';
+
+    if (editingExpenseId !== null) {
+      const idx = expenseEntries.findIndex(e => e.id === editingExpenseId);
+      if (idx !== -1) expenseEntries[idx] = { ...expenseEntries[idx], date, category, type, amount, note };
+      saveExpenses();
+      resetExpenseForm();
+      renderExpenses();
+      renderMonthReport();
+      return;
+    }
+
+    expenseEntries.push({ id: nextId(), date, category, type, amount, note });
+    saveExpenses();
+
+    $('expenseAmount').value = '';
+    $('expenseNote').value = '';
+    $('expenseSaveFlash').style.display = 'block';
+    setTimeout(() => { $('expenseSaveFlash').style.display = 'none'; }, 2000);
+
+    renderExpenses();
+    renderMonthReport();
+  });
+
+  $('expenseSearchInput').addEventListener('input', (e) => { expenseSearchTerm = e.target.value; renderExpenseTable(); });
+
+  function matchesExpenseSearch(e) {
+    if (!expenseSearchTerm) return true;
+    const t = expenseSearchTerm.toLowerCase();
+    return e.category.toLowerCase().includes(t) || (e.note || '').toLowerCase().includes(t);
+  }
+
+  function renderExpenseTable() {
+    const body = $('expenseBody');
+    const empty = $('expenseEmptyState');
+    body.innerHTML = '';
+
+    const filtered = expenseEntries.filter(matchesExpenseSearch).sort((a, b) => a.date.localeCompare(b.date));
+
+    if (filtered.length === 0) {
+      empty.style.display = 'block';
+      $('expenseTable').closest('.sheet-wrap').style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    $('expenseTable').closest('.sheet-wrap').style.display = 'block';
+
+    filtered.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${e.date}</td>
+        <td class="party">${escapeHtml(e.category)}</td>
+        <td class="${e.type === 'debit' ? 'debit-amt' : 'credit-amt'}">${e.type === 'debit' ? 'Debit' : 'Credit'}</td>
+        <td class="num ${e.type === 'debit' ? 'debit-amt' : 'credit-amt'}">${fmt(e.amount)}</td>
+        <td class="note">${escapeHtml(e.note || '')}</td>
+        <td class="actions-cell">
+          <button class="row-btn edit" title="Edit" data-id="${e.id}">✎</button>
+          <button class="row-btn del" title="Delete" data-id="${e.id}">×</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+
+    body.querySelectorAll('.row-btn.del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        expenseEntries = expenseEntries.filter(e => e.id !== id);
+        saveExpenses();
+        renderExpenses();
+        renderMonthReport();
+      });
+    });
+    body.querySelectorAll('.row-btn.edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        const e = expenseEntries.find(x => x.id === id);
+        if (!e) return;
+        editingExpenseId = id;
+        $('editingExpenseId').value = id;
+        $('expenseDate').value = e.date;
+        $('expenseCategory').value = e.category;
+        updateExpenseTypeBadge();
+        $('expenseAmount').value = e.amount;
+        $('expenseNote').value = e.note || '';
+        $('expenseSubmitLabel').textContent = 'Save changes';
+        $('expenseCancelBtn').hidden = false;
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        $('expenseCategory').focus();
+      });
+    });
+  }
+
+  function renderExpenseSummary() {
+    const totalCredit = expenseEntries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = expenseEntries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    $('expTotalCredit').textContent = fmt(totalCredit);
+    $('expTotalDebit').textContent = fmt(totalDebit);
+    $('expTotalNet').textContent = fmt(totalCredit - totalDebit);
+  }
+
+  function renderExpenses() {
+    renderExpenseTable();
+    renderExpenseSummary();
+  }
+
+  // ---------- Month-end report ----------
+  function renderMonthReport() {
+    const monthVal = $('reportMonth').value; // "YYYY-MM"
+    if (!monthVal) return;
+    const inMonth = expenseEntries.filter(e => e.date.slice(0, 7) === monthVal);
+
+    const totalCredit = inMonth.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = inMonth.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    $('reportCredit').textContent = fmt(totalCredit);
+    $('reportDebit').textContent = fmt(totalDebit);
+    $('reportNet').textContent = fmt(totalCredit - totalDebit);
+
+    const byCategory = {};
+    inMonth.forEach(e => {
+      if (!byCategory[e.category]) byCategory[e.category] = { total: 0, type: e.type };
+      byCategory[e.category].total += e.amount;
+    });
+
+    const box = $('reportCategoryBreakdown');
+    const cats = Object.keys(byCategory);
+    if (cats.length === 0) {
+      box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">No expenses logged for this month.</div>';
+      return;
+    }
+    box.innerHTML = '';
+    cats.sort((a, b) => byCategory[b].total - byCategory[a].total).forEach(cat => {
+      const row = document.createElement('div');
+      row.className = 'category-row';
+      row.innerHTML = `
+        <span class="cname">${escapeHtml(cat)}</span>
+        <span class="cval ${byCategory[cat].type}">${fmt(byCategory[cat].total)}</span>
+      `;
+      box.appendChild(row);
+    });
+  }
+  $('reportMonth').addEventListener('change', renderMonthReport);
+  $('printReportBtn').addEventListener('click', () => window.print());
+
+  // ---------- Expense Export / Import ----------
+  $('expenseExportBtn').addEventListener('click', () => {
+    if (expenseEntries.length === 0) { alert('No expenses to export yet.'); return; }
+    const rows = expenseEntries.slice().sort((a, b) => a.date.localeCompare(b.date))
+      .map(e => ({ Date: e.date, Category: e.category, Type: e.type, Amount: e.amount, Note: e.note || '' }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+    XLSX.writeFile(wb, 'khata_expenses.xlsx');
+  });
+
+  $('expenseImportBtn').addEventListener('click', () => $('expenseImportFileInput').click());
+  $('expenseImportFileInput').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+        const imported = [];
+        for (const row of rows) {
+          const category = String(row.Category || row.category || '').trim();
+          const amount = parseFloat(row.Amount || row.amount);
+          if (!category || isNaN(amount) || amount <= 0) continue;
+          let typeRaw = String(row.Type || row.type || '').trim().toLowerCase();
+          const type = (typeRaw === 'debit' || typeRaw === 'credit') ? typeRaw : (EXPENSE_CATEGORIES[category] || 'debit');
+          let dateVal = row.Date || row.date || todayStr();
+          dateVal = dateVal instanceof Date ? dateVal.toISOString().slice(0, 10) : String(dateVal).slice(0, 10);
+          imported.push({ id: nextId(), date: dateVal, category, type, amount, note: String(row.Note || row.note || '') });
+        }
+        if (imported.length === 0) { alert('No valid rows found. Expected columns: Date, Category, Type, Amount, Note.'); return; }
+        const replace = confirm(`Found ${imported.length} valid row(s).\n\nOK = REPLACE all current expenses.\nCancel = ADD to existing entries.`);
+        expenseEntries = replace ? imported : expenseEntries.concat(imported);
+        saveExpenses();
+        renderExpenses();
+        renderMonthReport();
+        alert(`Import complete: ${imported.length} row(s) ${replace ? 'loaded' : 'added'}.`);
+      } catch (err) {
+        alert('Could not read this file. Make sure it is a valid Excel or CSV file.');
+      } finally { ev.target.value = ''; }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  $('expenseClearBtn').addEventListener('click', () => {
+    if (confirm('This will permanently delete all expense entries. Continue?')) {
+      expenseEntries = []; saveExpenses(); renderExpenses(); renderMonthReport();
+    }
+  });
+
+  // ---------- Init ----------
+  loadData();
+  populateCategorySelect();
+  renderHomeSummary();
+  history.replaceState({ view: 'home' }, '', '#home');
+  showView('home', true);
+})();
+</script>
+
+</body>
+</html>
