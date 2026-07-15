@@ -500,14 +500,17 @@
         <div class="bangla">দৈনিক হিসাব খাতা — daily accounts ledger</div>
       </div>
       <div class="shopname-wrap">
-        <label for="shopName" style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faded);text-align:right;">Shop name</label>
+        <div style="display:flex; gap:10px; align-items:center; justify-content:flex-end;">
+          <label for="shopName" id="shopNameLabel" style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faded);">Shop name</label>
+          <button type="button" id="langToggle" class="ghost-btn" style="padding:4px 10px;font-size:10.5px;">বাংলা</button>
+        </div>
         <input id="shopName" type="text" placeholder="Enter shop name" value="">
       </div>
     </header>
 
     <!-- ========== TOP-LEVEL LEDGER TYPE VIEW ========== -->
     <section id="homeView">
-      <div class="entry-page-sub" style="margin-bottom:6px;">Choose which ledger you want to open.</div>
+      <div class="entry-page-sub" id="homeChooseSub" style="margin-bottom:6px;">Choose which ledger you want to open.</div>
       <div class="nav-cards two-col">
         <button class="nav-card" id="goBiz">
           <div class="num">1</div>
@@ -550,15 +553,15 @@
 
       <div class="home-summary">
         <div class="cell credit">
-          <div class="label">Total Credit</div>
+          <div class="label" id="lblHomeCredit">Total Credit</div>
           <div class="value" id="homeCredit">0</div>
         </div>
         <div class="cell debit">
-          <div class="label">Total Debit</div>
+          <div class="label" id="lblHomeDebit">Total Debit</div>
           <div class="value" id="homeDebit">0</div>
         </div>
         <div class="cell net">
-          <div class="label">Net Balance</div>
+          <div class="label" id="lblHomeNet">Net Balance</div>
           <div class="value" id="homeNet">0</div>
         </div>
       </div>
@@ -573,32 +576,36 @@
       <form class="entry-form" id="entryForm">
         <input type="hidden" id="editingId" value="">
         <div class="field">
-          <label for="dateInput">Date</label>
+          <label for="dateInput" id="lblDate1">Date</label>
           <input id="dateInput" type="date" required>
         </div>
         <div class="field">
-          <label for="partyInput">Party / customer</label>
+          <label for="partyInput" id="lblParty">Party / customer</label>
           <input id="partyInput" list="partyList" type="text" placeholder="e.g. Karim Mia" required>
           <datalist id="partyList"></datalist>
         </div>
         <div class="field">
-          <label for="commodityInput">Commodity (optional)</label>
+          <label for="phoneInput" id="lblPhone">Phone (optional)</label>
+          <input id="phoneInput" type="tel" placeholder="01XXXXXXXXX">
+        </div>
+        <div class="field">
+          <label for="commodityInput" id="lblCommodity">Commodity (optional)</label>
           <input id="commodityInput" list="ledgerCommodityList" type="text" placeholder="e.g. Onion, Lentil, Rice">
           <datalist id="ledgerCommodityList"></datalist>
         </div>
         <div class="field">
-          <label for="amountInput">Amount (৳)</label>
+          <label for="amountInput" id="lblAmount">Amount (৳)</label>
           <input id="amountInput" type="number" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="field">
-          <label>Type</label>
+          <label id="lblType">Type</label>
           <div class="type-toggle">
             <button type="button" id="typeCredit" class="active credit">CREDIT</button>
             <button type="button" id="typeDebit" class="debit">DEBIT</button>
           </div>
         </div>
         <div class="field">
-          <label for="noteInput">Note</label>
+          <label for="noteInput" id="lblNote">Note</label>
           <input id="noteInput" type="text" placeholder="optional">
         </div>
         <div class="form-btn-row">
@@ -608,15 +615,15 @@
       </form>
 
       <div class="save-flash" id="saveFlash">
-        Saved. <a href="#" id="goAllFromFlash">View all entries &rarr;</a>
+        <span id="savedText">Saved.</span> <a href="#" id="goAllFromFlash">View all entries &rarr;</a>
       </div>
     </section>
 
     <!-- ========== ALL ENTRIES VIEW ========== -->
     <section id="allView" hidden>
       <button class="back-link" data-back="bizHome">&larr; Back</button>
-      <h2 class="entry-page-title">All Entries</h2>
-      <div class="entry-page-sub">Search, edit, filter by party, or export / import as Excel.</div>
+      <h2 class="entry-page-title" id="allViewTitle">All Entries</h2>
+      <div class="entry-page-sub" id="allViewSub">Search, edit, filter by party, or export / import as Excel.</div>
 
       <div class="toolbar">
         <div class="search-row">
@@ -635,28 +642,31 @@
       </div>
 
       <div class="filter-row" id="filterRow">
-        <span class="flabel">Show:</span>
+        <span class="flabel" id="showLabelLedger">Show:</span>
         <button class="chip active" data-party="__all__">All parties</button>
       </div>
 
       <div class="party-statement" id="partyStatement">
-        <div class="name" id="psName"></div>
-        <div class="stat credit"><div class="label">Credit</div><div class="val" id="psCredit">0</div></div>
-        <div class="stat debit"><div class="label">Debit</div><div class="val" id="psDebit">0</div></div>
-        <div class="stat net"><div class="label">Balance</div><div class="val" id="psNet">0</div></div>
+        <div>
+          <div class="name" id="psName"></div>
+          <div id="psPhone" style="font-size:11.5px;color:var(--ink-faded);margin-top:2px;"></div>
+        </div>
+        <div class="stat credit"><div class="label" id="lblPsCredit">Credit</div><div class="val" id="psCredit">0</div></div>
+        <div class="stat debit"><div class="label" id="lblPsDebit">Debit</div><div class="val" id="psDebit">0</div></div>
+        <div class="stat net"><div class="label" id="lblPsNet">Balance</div><div class="val" id="psNet">0</div></div>
       </div>
 
       <div class="sheet-wrap">
         <table class="ledger" id="ledgerTable">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Party</th>
-              <th>Commodity</th>
-              <th>Note</th>
-              <th class="num">Credit</th>
-              <th class="num">Debit</th>
-              <th class="num">Balance</th>
+              <th id="thDate1">Date</th>
+              <th id="thParty">Party</th>
+              <th id="thCommodity1">Commodity</th>
+              <th id="thNote1">Note</th>
+              <th class="num" id="thCredit1">Credit</th>
+              <th class="num" id="thDebit1">Debit</th>
+              <th class="num" id="thBalance1">Balance</th>
               <th></th>
             </tr>
           </thead>
@@ -668,46 +678,46 @@
       </div>
 
       <div class="all-summary">
-        <div class="cell credit"><div class="label">Total Credit</div><div class="value" id="totalCredit">0</div></div>
-        <div class="cell debit"><div class="label">Total Debit</div><div class="value" id="totalDebit">0</div></div>
-        <div class="cell net"><div class="label">Net Balance</div><div class="value" id="netBalance">0</div></div>
+        <div class="cell credit"><div class="label" id="lblTotalCredit1">Total Credit</div><div class="value" id="totalCredit">0</div></div>
+        <div class="cell debit"><div class="label" id="lblTotalDebit1">Total Debit</div><div class="value" id="totalDebit">0</div></div>
+        <div class="cell net"><div class="label" id="lblNetBalance1">Net Balance</div><div class="value" id="netBalance">0</div></div>
       </div>
     </section>
 
     <!-- ========== STOCK & PRICE VIEW ========== -->
     <section id="stockView" hidden>
       <button class="back-link" data-back="bizHome">&larr; Back</button>
-      <h2 class="entry-page-title">Stock &amp; Price</h2>
-      <div class="entry-page-sub">Log commodity buy/sell prices to see seasonal trends and buy/sell signals.</div>
+      <h2 class="entry-page-title" id="stockViewTitle">Stock &amp; Price</h2>
+      <div class="entry-page-sub" id="stockViewSub">Log commodity buy/sell prices to see seasonal trends and buy/sell signals.</div>
 
       <form class="entry-form two-col" id="stockForm">
         <div class="field">
-          <label for="stockDate">Date</label>
+          <label for="stockDate" id="lblStockDate">Date</label>
           <input id="stockDate" type="date" required>
         </div>
         <div class="field">
-          <label for="stockCommodity">Commodity</label>
+          <label for="stockCommodity" id="lblStockCommodity">Commodity</label>
           <input id="stockCommodity" list="commodityList" type="text" placeholder="e.g. Onion, Lentil, Rice" required>
           <datalist id="commodityList"></datalist>
         </div>
         <div class="field">
-          <label for="stockBuyPrice">Buy price (per kg/maund)</label>
+          <label for="stockBuyPrice" id="lblStockBuy">Buy price (per kg/maund)</label>
           <input id="stockBuyPrice" type="number" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="field">
-          <label for="stockSellPrice">Sell price (optional)</label>
+          <label for="stockSellPrice" id="lblStockSell">Sell price (optional)</label>
           <input id="stockSellPrice" type="number" step="0.01" min="0" placeholder="leave blank if not sold">
         </div>
         <div class="field">
-          <label for="stockQty">Quantity (kg/maund)</label>
+          <label for="stockQty" id="lblStockQty">Quantity (kg/maund)</label>
           <input id="stockQty" type="number" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="field">
-          <label for="stockNote">Note</label>
+          <label for="stockNote" id="lblStockNote">Note</label>
           <input id="stockNote" type="text" placeholder="optional">
         </div>
         <div class="form-btn-row span-2" style="grid-column:span 2;">
-          <button type="submit" class="add-btn">+ Add Stock Entry</button>
+          <button type="submit" class="add-btn" id="stockSubmitBtn">+ Add Stock Entry</button>
         </div>
       </form>
 
@@ -717,7 +727,7 @@
 
       <div class="toolbar">
         <div class="filter-row" id="stockFilterRow" style="margin-bottom:0;">
-          <span class="flabel">Show:</span>
+          <span class="flabel" id="showLabelStock">Show:</span>
           <button class="chip active" data-commodity="__all__">All commodities</button>
         </div>
         <div class="buttons">
@@ -732,13 +742,13 @@
         <table class="ledger" id="stockTable">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Commodity</th>
-              <th class="num">Buy</th>
-              <th class="num">Sell</th>
-              <th class="num">Qty</th>
-              <th class="num">Profit</th>
-              <th>Note</th>
+              <th id="thDate2">Date</th>
+              <th id="thCommodity2">Commodity</th>
+              <th class="num" id="thBuy">Buy</th>
+              <th class="num" id="thSell">Sell</th>
+              <th class="num" id="thQty">Qty</th>
+              <th class="num" id="thProfit">Profit</th>
+              <th id="thNote2">Note</th>
               <th></th>
             </tr>
           </thead>
@@ -751,18 +761,18 @@
 
       <div class="stock-grid">
         <div class="analysis-box">
-          <h3>Seasonal average by month</h3>
+          <h3 id="seasonalHeading">Seasonal average by month</h3>
           <div class="field" style="margin-bottom:10px;">
-            <label for="analysisCommodity">Commodity</label>
+            <label for="analysisCommodity" id="lblAnalysisCommodity">Commodity</label>
             <select id="analysisCommodity"><option value="">— select —</option></select>
           </div>
           <div id="seasonalList"></div>
         </div>
 
         <div class="analysis-box">
-          <h3>Buy / sell signal</h3>
+          <h3 id="signalHeading">Buy / sell signal</h3>
           <div class="field" style="margin-bottom:10px;">
-            <label for="signalPrice">Today's price you're seeing</label>
+            <label for="signalPrice" id="lblSignalPrice">Today's price you're seeing</label>
             <input id="signalPrice" type="number" step="0.01" min="0" placeholder="0.00">
           </div>
           <button class="ghost-btn" id="checkSignalBtn">Check signal</button>
@@ -774,25 +784,25 @@
     <!-- ========== DAILY EXPENSES VIEW ========== -->
     <section id="expenseView" hidden>
       <button class="back-link" data-back="home">&larr; Back</button>
-      <h2 class="entry-page-title">Daily Expenses</h2>
-      <div class="entry-page-sub">Pick a category — the system decides debit (expense) or credit (income) automatically.</div>
+      <h2 class="entry-page-title" id="expenseViewTitle">Daily Expenses</h2>
+      <div class="entry-page-sub" id="expenseViewSub">Pick a category — the system decides debit (expense) or credit (income) automatically.</div>
 
       <form class="entry-form" id="expenseForm">
         <div class="field">
-          <label for="expenseDate">Date</label>
+          <label for="expenseDate" id="lblExpenseDate">Date</label>
           <input id="expenseDate" type="date" required>
         </div>
         <div class="field">
-          <label for="expenseCategory">Category</label>
+          <label for="expenseCategory" id="lblExpenseCategory">Category</label>
           <select id="expenseCategory" required></select>
           <span class="type-badge none" id="expenseTypeBadge">Select a category</span>
         </div>
         <div class="field">
-          <label for="expenseAmount">Amount (৳)</label>
+          <label for="expenseAmount" id="lblExpenseAmount">Amount (৳)</label>
           <input id="expenseAmount" type="number" step="0.01" min="0" placeholder="0.00" required>
         </div>
         <div class="field">
-          <label for="expenseNote">Note</label>
+          <label for="expenseNote" id="lblExpenseNote">Note</label>
           <input id="expenseNote" type="text" placeholder="optional">
         </div>
         <div class="form-btn-row">
@@ -822,11 +832,11 @@
         <table class="ledger" id="expenseTable">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Type</th>
-              <th class="num">Amount</th>
-              <th>Note</th>
+              <th id="thDate3">Date</th>
+              <th id="thCategory">Category</th>
+              <th id="thType">Type</th>
+              <th class="num" id="thAmount">Amount</th>
+              <th id="thNote3">Note</th>
               <th></th>
             </tr>
           </thead>
@@ -838,22 +848,22 @@
       </div>
 
       <div class="all-summary">
-        <div class="cell credit"><div class="label">Total Credit (income)</div><div class="value" id="expTotalCredit">0</div></div>
-        <div class="cell debit"><div class="label">Total Debit (expense)</div><div class="value" id="expTotalDebit">0</div></div>
-        <div class="cell net"><div class="label">Net</div><div class="value" id="expTotalNet">0</div></div>
+        <div class="cell credit"><div class="label" id="lblExpTotalCredit">Total Credit (income)</div><div class="value" id="expTotalCredit">0</div></div>
+        <div class="cell debit"><div class="label" id="lblExpTotalDebit">Total Debit (expense)</div><div class="value" id="expTotalDebit">0</div></div>
+        <div class="cell net"><div class="label" id="lblExpTotalNet">Net</div><div class="value" id="expTotalNet">0</div></div>
       </div>
 
       <div class="report-box">
-        <h3>Month-end report</h3>
-        <div class="report-sub">Pick a month to see its income vs expense breakdown.</div>
+        <h3 id="reportHeading">Month-end report</h3>
+        <div class="report-sub" id="reportSub">Pick a month to see its income vs expense breakdown.</div>
         <div class="report-picker">
           <input type="month" id="reportMonth">
           <button class="ghost-btn" id="printReportBtn">Print this report</button>
         </div>
         <div class="report-summary">
-          <div class="cell credit"><div class="label">Credit (income)</div><div class="value" id="reportCredit">0</div></div>
-          <div class="cell debit"><div class="label">Debit (expense)</div><div class="value" id="reportDebit">0</div></div>
-          <div class="cell net"><div class="label">Net profit/loss</div><div class="value" id="reportNet">0</div></div>
+          <div class="cell credit"><div class="label" id="lblReportCredit">Credit (income)</div><div class="value" id="reportCredit">0</div></div>
+          <div class="cell debit"><div class="label" id="lblReportDebit">Debit (expense)</div><div class="value" id="reportDebit">0</div></div>
+          <div class="cell net"><div class="label" id="lblReportNet">Net profit/loss</div><div class="value" id="reportNet">0</div></div>
         </div>
         <div id="reportCategoryBreakdown"></div>
       </div>
@@ -868,11 +878,13 @@
   const STOCK_KEY = 'khata_stock_entries_v1';
   const EXPENSE_KEY = 'khata_expense_entries_v1';
   const SHOP_KEY = 'khata_ledger_shopname_v1';
+  const PARTY_KEY = 'khata_party_contacts_v1';
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   let entries = [];
   let stockEntries = [];
   let expenseEntries = [];
+  let partyContacts = {};
   let currentType = 'credit';
   let activeFilter = '__all__';
   let activeCommodityFilter = '__all__';
@@ -883,7 +895,8 @@
   let editingExpenseId = null;
 
   const EXPENSE_CATEGORIES = {
-    'Salery': 'credit',
+    'Salary': 'credit',
+    'Savings': 'credit',
     'Rent': 'debit',
     'Electricity / Utility': 'debit',
     'Transport': 'debit',
@@ -903,7 +916,296 @@
     'Other Income': 'credit'
   };
 
+  const CATEGORY_LABELS_BN = {
+    'Salary': 'বেতন',
+    'Savings': 'সঞ্চয়',
+    'Rent': 'ভাড়া',
+    'Electricity / Utility': 'বিদ্যুৎ / ইউটিলিটি',
+    'Transport': 'পরিবহন',
+    'Fuel Cost': 'জ্বালানি খরচ',
+    'Meal Cost': 'খাবার খরচ',
+    'Mobile Recharge': 'মোবাইল রিচার্জ',
+    'Festival Cost': 'উৎসব খরচ',
+    'Groceries': 'মুদি বাজার',
+    'Education / Tuition': 'শিক্ষা / টিউশন',
+    'Medical / Health': 'চিকিৎসা / স্বাস্থ্য',
+    'Labor / Wages': 'শ্রমিক মজুরি',
+    'Loading / Unloading': 'লোড / আনলোড',
+    'Shop Maintenance': 'দোকান মেরামত',
+    'Other Expense': 'অন্যান্য খরচ',
+    'Extra Income': 'অতিরিক্ত আয়',
+    'Refund Received': 'ফেরত পাওয়া',
+    'Other Income': 'অন্যান্য আয়'
+  };
+
+  const MONTH_NAMES_BN = ['জানু','ফেব্রু','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টে','অক্টো','নভে','ডিসে'];
+
+  const LANG_KEY = 'khata_lang_v1';
+  let currentLang = localStorage.getItem(LANG_KEY) || 'en';
+
+  function monthLabel(m) { return currentLang === 'bn' ? MONTH_NAMES_BN[m - 1] : MONTH_NAMES[m - 1]; }
+  function categoryLabel(cat) { return currentLang === 'bn' ? (CATEGORY_LABELS_BN[cat] || cat) : cat; }
+
+  const translations = {
+    en: {
+      shopNameLabel: 'Shop name', shopNamePlaceholder: 'Enter shop name', langToggle: 'বাংলা',
+      homeChooseSub: 'Choose which ledger you want to open.',
+      navBizTitle: 'Business Ledger', navBizDesc: 'Customer entries, full ledger, and stock & price tracking for your shop.',
+      navPersonalTitle: 'Personal Ledger', navPersonalDesc: 'Track your own daily expenses — fuel, meals, recharge, and more.',
+      navEntryTitle: 'New Entry', navEntryDesc: 'Add a credit or debit transaction for a customer.',
+      navAllTitle: 'All Entries', navAllDesc: 'Search, edit, export or import the full ledger.',
+      navStockTitle: 'Stock & Price', navStockDesc: 'Log commodity buy/sell prices and see seasonal trends.',
+      homeCreditLabel: 'Total Credit', homeDebitLabel: 'Total Debit', homeNetLabel: 'Net Balance',
+      backLink: '← Back',
+      newEntryTitle: 'New Entry', editEntryTitle: 'Edit Entry',
+      newEntrySub: 'Add a credit (money received) or debit (money owed to you) transaction.',
+      editEntrySub: 'Update this transaction.',
+      lblDate: 'Date', lblParty: 'Party / customer', lblPhone: 'Phone (optional)',
+      lblCommodity: 'Commodity (optional)', lblAmount: 'Amount (৳)', lblType: 'Type',
+      lblNote: 'Note', partyPlaceholder: 'e.g. Karim Mia', commodityPlaceholder: 'e.g. Onion, Lentil, Rice',
+      addEntryBtn: '+ Add Entry', saveChangesBtn: 'Save changes', cancelEditBtn: 'Cancel edit',
+      savedText: 'Saved.', viewAllLink: 'View all entries →',
+      allViewTitle: 'All Entries', allViewSub: 'Search, edit, filter by party, or export / import as Excel.',
+      searchPlaceholder: 'Search party, commodity or note...', allCommodities: 'All commodities',
+      exportExcel: '⬇ Export Excel', importExcel: '⬆ Import Excel', printBtn: 'Print', clearAll: 'Clear all',
+      showLabel: 'Show:', allParties: 'All parties',
+      thDate: 'Date', thParty: 'Party', thCommodity: 'Commodity', thNote: 'Note',
+      thCredit: 'Credit', thDebit: 'Debit', thBalance: 'Balance',
+      emptyLedger: 'No entries yet — go to "New Entry" to add your first transaction.',
+      totalCredit: 'Total Credit', totalDebit: 'Total Debit', netBalance: 'Net Balance',
+      psCredit: 'Credit', psDebit: 'Debit', psNet: 'Balance',
+      stockViewTitle: 'Stock & Price', stockViewSub: 'Log commodity buy/sell prices to see seasonal trends and buy/sell signals.',
+      lblStockDate: 'Date', lblStockCommodity: 'Commodity', lblStockBuy: 'Buy price (per kg/maund)',
+      lblStockSell: 'Sell price (optional)', lblStockQty: 'Quantity (kg/maund)', lblStockNote: 'Note',
+      addStockBtn: '+ Add Stock Entry', thBuy: 'Buy', thSell: 'Sell', thQty: 'Qty', thProfit: 'Profit',
+      emptyStock: 'No stock entries yet — add your first buy/sell record above.',
+      seasonalHeading: 'Seasonal average by month', lblAnalysisCommodity: 'Commodity', selectPlaceholder: '— select —',
+      signalHeading: 'Buy / sell signal', lblSignalPrice: "Today's price you're seeing",
+      checkSignal: 'Check signal', selectCommodityFirst: 'Select a commodity in the panel on the left first.',
+      enterValidPrice: 'Enter a valid price.',
+      expenseViewTitle: 'Daily Expenses',
+      expenseViewSub: 'Pick a category — the system decides debit (expense) or credit (income) automatically.',
+      lblExpenseDate: 'Date', lblExpenseCategory: 'Category', lblExpenseAmount: 'Amount (৳)', lblExpenseNote: 'Note',
+      selectCategory: 'Select a category', debitArrow: '→ Debit (expense)', creditArrow: '→ Credit (income)',
+      addExpenseBtn: '+ Add Expense', thType: 'Type', thAmount: 'Amount', debitWord: 'Debit', creditWord: 'Credit',
+      emptyExpense: 'No expenses logged yet — add your first one above.',
+      expTotalCredit: 'Total Credit (income)', expTotalDebit: 'Total Debit (expense)', expTotalNet: 'Net',
+      reportHeading: 'Month-end report', reportSub: 'Pick a month to see its income vs expense breakdown.',
+      printReport: 'Print this report', reportCredit: 'Credit (income)', reportDebit: 'Debit (expense)',
+      reportNet: 'Net profit/loss', noExpenseThisMonth: 'No expenses logged for this month.',
+      confirmClearLedger: 'This will permanently delete all ledger entries. Continue?',
+      confirmClearStock: 'This will permanently delete all stock entries. Continue?',
+      confirmClearExpense: 'This will permanently delete all expense entries. Continue?',
+      noExportLedger: 'No entries to export yet.', noExportStock: 'No stock entries to export yet.',
+      noExportExpense: 'No expenses to export yet.',
+      selectCommodityAbove: 'Select a commodity above.', noDataCommodity: 'No data logged yet for this commodity.',
+      historicalAvg: 'historical avg', todaysPrice: "today's price", recordsWord: 'record(s)',
+      verdictBuy: 'GOOD TIME TO BUY — price is notably below the seasonal average.',
+      verdictSell: 'GOOD TIME TO SELL — price is notably above the seasonal average.',
+      verdictNeutral: 'Price looks normal for this time of year — no strong signal.',
+      noDataForCommodityMonth: 'No historical data for {c} in {m} yet. Log a few more entries to get a signal.',
+    },
+    bn: {
+      shopNameLabel: 'দোকানের নাম', shopNamePlaceholder: 'দোকানের নাম লিখুন', langToggle: 'English',
+      homeChooseSub: 'কোন খাতা খুলতে চান তা নির্বাচন করুন।',
+      navBizTitle: 'ব্যবসার হিসাব', navBizDesc: 'গ্রাহকের হিসাব, সম্পূর্ণ খাতা এবং মজুদ ও দাম ট্র্যাকিং।',
+      navPersonalTitle: 'ব্যক্তিগত হিসাব', navPersonalDesc: 'নিজের দৈনিক খরচ ট্র্যাক করুন — জ্বালানি, খাবার, রিচার্জ ও আরও।',
+      navEntryTitle: 'নতুন হিসাব', navEntryDesc: 'গ্রাহকের জন্য ক্রেডিট বা ডেবিট লেনদেন যোগ করুন।',
+      navAllTitle: 'সব হিসাব', navAllDesc: 'খুঁজুন, সম্পাদনা করুন, এক্সেল এক্সপোর্ট/ইমপোর্ট করুন।',
+      navStockTitle: 'মজুদ ও দাম', navStockDesc: 'পণ্যের ক্রয়/বিক্রয় দাম লিখুন ও প্রবণতা দেখুন।',
+      homeCreditLabel: 'মোট ক্রেডিট', homeDebitLabel: 'মোট ডেবিট', homeNetLabel: 'নিট ব্যালেন্স',
+      backLink: '← ফিরে যান',
+      newEntryTitle: 'নতুন হিসাব', editEntryTitle: 'হিসাব সম্পাদনা',
+      newEntrySub: 'ক্রেডিট (টাকা পাওয়া) বা ডেবিট (টাকা পাওনা) লেনদেন যোগ করুন।',
+      editEntrySub: 'এই লেনদেনটি আপডেট করুন।',
+      lblDate: 'তারিখ', lblParty: 'পার্টি / গ্রাহক', lblPhone: 'ফোন (ঐচ্ছিক)',
+      lblCommodity: 'পণ্য (ঐচ্ছিক)', lblAmount: 'পরিমাণ (৳)', lblType: 'ধরন',
+      lblNote: 'নোট', partyPlaceholder: 'যেমন করিম মিয়া', commodityPlaceholder: 'যেমন পেঁয়াজ, ডাল, চাল',
+      addEntryBtn: '+ হিসাব যোগ করুন', saveChangesBtn: 'পরিবর্তন সংরক্ষণ করুন', cancelEditBtn: 'বাতিল করুন',
+      savedText: 'সংরক্ষিত হয়েছে।', viewAllLink: 'সব হিসাব দেখুন →',
+      allViewTitle: 'সব হিসাব', allViewSub: 'খুঁজুন, সম্পাদনা করুন, পার্টি অনুযায়ী ফিল্টার করুন, এক্সেল এক্সপোর্ট/ইমপোর্ট করুন।',
+      searchPlaceholder: 'পার্টি, পণ্য বা নোট খুঁজুন...', allCommodities: 'সব পণ্য',
+      exportExcel: '⬇ এক্সেল এক্সপোর্ট', importExcel: '⬆ এক্সেল ইমপোর্ট', printBtn: 'প্রিন্ট', clearAll: 'সব মুছুন',
+      showLabel: 'দেখান:', allParties: 'সব পার্টি',
+      thDate: 'তারিখ', thParty: 'পার্টি', thCommodity: 'পণ্য', thNote: 'নোট',
+      thCredit: 'ক্রেডিট', thDebit: 'ডেবিট', thBalance: 'ব্যালেন্স',
+      emptyLedger: 'এখনো কোনো হিসাব নেই — "নতুন হিসাব" থেকে যোগ করুন।',
+      totalCredit: 'মোট ক্রেডিট', totalDebit: 'মোট ডেবিট', netBalance: 'নিট ব্যালেন্স',
+      psCredit: 'ক্রেডিট', psDebit: 'ডেবিট', psNet: 'ব্যালেন্স',
+      stockViewTitle: 'মজুদ ও দাম', stockViewSub: 'পণ্যের ক্রয়/বিক্রয় দাম লিখে মৌসুমি প্রবণতা ও সংকেত দেখুন।',
+      lblStockDate: 'তারিখ', lblStockCommodity: 'পণ্য', lblStockBuy: 'ক্রয় মূল্য (প্রতি কেজি/মণ)',
+      lblStockSell: 'বিক্রয় মূল্য (ঐচ্ছিক)', lblStockQty: 'পরিমাণ (কেজি/মণ)', lblStockNote: 'নোট',
+      addStockBtn: '+ মজুদ যোগ করুন', thBuy: 'ক্রয়', thSell: 'বিক্রয়', thQty: 'পরিমাণ', thProfit: 'লাভ',
+      emptyStock: 'এখনো কোনো মজুদ তথ্য নেই — উপরে প্রথমটি যোগ করুন।',
+      seasonalHeading: 'মাস অনুযায়ী গড় দাম', lblAnalysisCommodity: 'পণ্য', selectPlaceholder: '— নির্বাচন করুন —',
+      signalHeading: 'কেনা / বেচার সংকেত', lblSignalPrice: 'আজকের দাম যা দেখছেন',
+      checkSignal: 'সংকেত দেখুন', selectCommodityFirst: 'প্রথমে বাম পাশের প্যানেলে একটি পণ্য নির্বাচন করুন।',
+      enterValidPrice: 'সঠিক দাম লিখুন।',
+      expenseViewTitle: 'দৈনিক খরচ',
+      expenseViewSub: 'একটি ক্যাটাগরি নির্বাচন করুন — সিস্টেম নিজেই আয় বা খরচ ঠিক করবে।',
+      lblExpenseDate: 'তারিখ', lblExpenseCategory: 'ক্যাটাগরি', lblExpenseAmount: 'পরিমাণ (৳)', lblExpenseNote: 'নোট',
+      selectCategory: 'একটি ক্যাটাগরি নির্বাচন করুন', debitArrow: '→ খরচ (ডেবিট)', creditArrow: '→ আয় (ক্রেডিট)',
+      addExpenseBtn: '+ খরচ যোগ করুন', thType: 'ধরন', thAmount: 'পরিমাণ', debitWord: 'ডেবিট', creditWord: 'ক্রেডিট',
+      emptyExpense: 'এখনো কোনো খরচ যোগ করা হয়নি — উপরে প্রথমটি যোগ করুন।',
+      expTotalCredit: 'মোট ক্রেডিট (আয়)', expTotalDebit: 'মোট ডেবিট (খরচ)', expTotalNet: 'নিট',
+      reportHeading: 'মাস শেষের রিপোর্ট', reportSub: 'আয় ও খরচের হিসাব দেখতে একটি মাস নির্বাচন করুন।',
+      printReport: 'রিপোর্ট প্রিন্ট করুন', reportCredit: 'ক্রেডিট (আয়)', reportDebit: 'ডেবিট (খরচ)',
+      reportNet: 'নিট লাভ/ক্ষতি', noExpenseThisMonth: 'এই মাসে কোনো খরচ লেখা হয়নি।',
+      confirmClearLedger: 'এটি স্থায়ীভাবে সব হিসাব মুছে ফেলবে। চালিয়ে যাবেন?',
+      confirmClearStock: 'এটি স্থায়ীভাবে সব মজুদ তথ্য মুছে ফেলবে। চালিয়ে যাবেন?',
+      confirmClearExpense: 'এটি স্থায়ীভাবে সব খরচ মুছে ফেলবে। চালিয়ে যাবেন?',
+      noExportLedger: 'এক্সপোর্ট করার মতো কোনো হিসাব নেই।', noExportStock: 'এক্সপোর্ট করার মতো কোনো মজুদ তথ্য নেই।',
+      noExportExpense: 'এক্সপোর্ট করার মতো কোনো খরচ নেই।',
+      selectCommodityAbove: 'উপরে একটি পণ্য নির্বাচন করুন।', noDataCommodity: 'এই পণ্যের জন্য এখনো কোনো তথ্য নেই।',
+      historicalAvg: 'ঐতিহাসিক গড়', todaysPrice: 'আজকের দাম', recordsWord: 'টি তথ্য',
+      verdictBuy: 'কেনার ভালো সময় — দাম মৌসুমি গড়ের চেয়ে অনেক কম।',
+      verdictSell: 'বেচার ভালো সময় — দাম মৌসুমি গড়ের চেয়ে অনেক বেশি।',
+      verdictNeutral: 'দাম এই সময়ের জন্য স্বাভাবিক — কোনো শক্তিশালী সংকেত নেই।',
+      noDataForCommodityMonth: '{m} মাসে {c}-এর জন্য এখনো কোনো তথ্য নেই। সংকেত পেতে আরও কিছু তথ্য যোগ করুন।',
+    },
+  };
+
+  function t(key) { return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key; }
+
   const $ = (id) => document.getElementById(id);
+
+  function applyTranslations() {
+    document.documentElement.lang = currentLang;
+    $('shopNameLabel').textContent = t('shopNameLabel');
+    $('shopName').placeholder = t('shopNamePlaceholder');
+    $('langToggle').textContent = t('langToggle');
+
+    $('homeChooseSub').textContent = t('homeChooseSub');
+    $('goBiz').querySelector('.title').textContent = t('navBizTitle');
+    $('goBiz').querySelector('.desc').textContent = t('navBizDesc');
+    $('goPersonal').querySelector('.title').textContent = t('navPersonalTitle');
+    $('goPersonal').querySelector('.desc').textContent = t('navPersonalDesc');
+    $('goEntry').querySelector('.title').textContent = t('navEntryTitle');
+    $('goEntry').querySelector('.desc').textContent = t('navEntryDesc');
+    $('goAll').querySelector('.title').textContent = t('navAllTitle');
+    $('goAll').querySelector('.desc').textContent = t('navAllDesc');
+    $('goStock').querySelector('.title').textContent = t('navStockTitle');
+    $('goStock').querySelector('.desc').textContent = t('navStockDesc');
+    document.querySelectorAll('.nav-card .bangla-sub').forEach(el => { el.style.display = currentLang === 'bn' ? 'none' : 'block'; });
+
+    $('lblHomeCredit').textContent = t('homeCreditLabel');
+    $('lblHomeDebit').textContent = t('homeDebitLabel');
+    $('lblHomeNet').textContent = t('homeNetLabel');
+
+    document.querySelectorAll('.back-link').forEach(el => { el.innerHTML = t('backLink'); });
+
+    if (editingId === null) {
+      $('entryPageTitle').textContent = t('newEntryTitle');
+      $('entryPageSub').textContent = t('newEntrySub');
+      $('submitBtnLabel').textContent = t('addEntryBtn');
+    } else {
+      $('entryPageTitle').textContent = t('editEntryTitle');
+      $('entryPageSub').textContent = t('editEntrySub');
+      $('submitBtnLabel').textContent = t('saveChangesBtn');
+    }
+    $('cancelEditBtn').textContent = t('cancelEditBtn');
+    $('lblDate1').textContent = t('lblDate');
+    $('lblParty').textContent = t('lblParty');
+    $('lblPhone').textContent = t('lblPhone');
+    $('lblCommodity').textContent = t('lblCommodity');
+    $('lblAmount').textContent = t('lblAmount');
+    $('lblType').textContent = t('lblType');
+    $('lblNote').textContent = t('lblNote');
+    $('partyInput').placeholder = t('partyPlaceholder');
+    $('commodityInput').placeholder = t('commodityPlaceholder');
+    $('savedText').textContent = t('savedText');
+    $('goAllFromFlash').textContent = t('viewAllLink');
+
+    $('allViewTitle').textContent = t('allViewTitle');
+    $('allViewSub').textContent = t('allViewSub');
+    $('searchInput').placeholder = t('searchPlaceholder');
+    $('commodityFilterSelect').options[0].textContent = t('allCommodities');
+    $('exportBtn').textContent = t('exportExcel');
+    $('importBtn').textContent = t('importExcel');
+    $('printBtn').textContent = t('printBtn');
+    $('clearBtn').textContent = t('clearAll');
+    $('showLabelLedger').textContent = t('showLabel');
+    $('lblPsCredit').textContent = t('psCredit');
+    $('lblPsDebit').textContent = t('psDebit');
+    $('lblPsNet').textContent = t('psNet');
+    $('thDate1').textContent = t('thDate');
+    $('thParty').textContent = t('thParty');
+    $('thCommodity1').textContent = t('thCommodity');
+    $('thNote1').textContent = t('thNote');
+    $('thCredit1').textContent = t('thCredit');
+    $('thDebit1').textContent = t('thDebit');
+    $('thBalance1').textContent = t('thBalance');
+    $('emptyState').textContent = t('emptyLedger');
+    $('lblTotalCredit1').textContent = t('totalCredit');
+    $('lblTotalDebit1').textContent = t('totalDebit');
+    $('lblNetBalance1').textContent = t('netBalance');
+
+    $('stockViewTitle').textContent = t('stockViewTitle');
+    $('stockViewSub').textContent = t('stockViewSub');
+    $('lblStockDate').textContent = t('lblStockDate');
+    $('lblStockCommodity').textContent = t('lblStockCommodity');
+    $('lblStockBuy').textContent = t('lblStockBuy');
+    $('lblStockSell').textContent = t('lblStockSell');
+    $('lblStockQty').textContent = t('lblStockQty');
+    $('lblStockNote').textContent = t('lblStockNote');
+    $('stockSubmitBtn').textContent = t('addStockBtn');
+    $('showLabelStock').textContent = t('showLabel');
+    $('stockExportBtn').textContent = t('exportExcel');
+    $('stockImportBtn').textContent = t('importExcel');
+    $('stockClearBtn').textContent = t('clearAll');
+    $('thDate2').textContent = t('thDate');
+    $('thCommodity2').textContent = t('thCommodity');
+    $('thBuy').textContent = t('thBuy');
+    $('thSell').textContent = t('thSell');
+    $('thQty').textContent = t('thQty');
+    $('thProfit').textContent = t('thProfit');
+    $('thNote2').textContent = t('thNote');
+    $('stockEmptyState').textContent = t('emptyStock');
+    $('seasonalHeading').textContent = t('seasonalHeading');
+    $('lblAnalysisCommodity').textContent = t('lblAnalysisCommodity');
+    $('lblSignalPrice').textContent = t('lblSignalPrice');
+    $('signalHeading').textContent = t('signalHeading');
+    $('checkSignalBtn').textContent = t('checkSignal');
+
+    $('expenseViewTitle').textContent = t('expenseViewTitle');
+    $('expenseViewSub').textContent = t('expenseViewSub');
+    $('lblExpenseDate').textContent = t('lblExpenseDate');
+    $('lblExpenseCategory').textContent = t('lblExpenseCategory');
+    $('lblExpenseAmount').textContent = t('lblExpenseAmount');
+    $('lblExpenseNote').textContent = t('lblExpenseNote');
+    $('expenseCancelBtn').textContent = t('cancelEditBtn');
+    $('expenseSearchInput').placeholder = t('searchPlaceholder');
+    $('expenseExportBtn').textContent = t('exportExcel');
+    $('expenseImportBtn').textContent = t('importExcel');
+    $('expenseClearBtn').textContent = t('clearAll');
+    $('thDate3').textContent = t('thDate');
+    $('thCategory').textContent = t('lblExpenseCategory');
+    $('thType').textContent = t('thType');
+    $('thAmount').textContent = t('thAmount');
+    $('thNote3').textContent = t('thNote');
+    $('expenseEmptyState').textContent = t('emptyExpense');
+    $('lblExpTotalCredit').textContent = t('expTotalCredit');
+    $('lblExpTotalDebit').textContent = t('expTotalDebit');
+    $('lblExpTotalNet').textContent = t('expTotalNet');
+    $('reportHeading').textContent = t('reportHeading');
+    $('reportSub').textContent = t('reportSub');
+    $('printReportBtn').textContent = t('printReport');
+    $('lblReportCredit').textContent = t('reportCredit');
+    $('lblReportDebit').textContent = t('reportDebit');
+    $('lblReportNet').textContent = t('reportNet');
+
+    if (typeof populateCategorySelect === 'function') populateCategorySelect();
+    if (typeof updateExpenseTypeBadge === 'function') updateExpenseTypeBadge();
+  }
+
+  $('langToggle').addEventListener('click', () => {
+    currentLang = currentLang === 'en' ? 'bn' : 'en';
+    localStorage.setItem(LANG_KEY, currentLang);
+    applyTranslations();
+    if (!$('allView').hidden) render();
+    if (!$('stockView').hidden) renderStock();
+    if (!$('expenseView').hidden) { renderExpenses(); renderMonthReport(); }
+  });
 
   // ---------- View switching ----------
   function showView(name, fromPopState) {
@@ -965,12 +1267,14 @@
     try { entries = JSON.parse(localStorage.getItem(LEDGER_KEY)) || []; } catch (e) { entries = []; }
     try { stockEntries = JSON.parse(localStorage.getItem(STOCK_KEY)) || []; } catch (e) { stockEntries = []; }
     try { expenseEntries = JSON.parse(localStorage.getItem(EXPENSE_KEY)) || []; } catch (e) { expenseEntries = []; }
+    try { partyContacts = JSON.parse(localStorage.getItem(PARTY_KEY)) || {}; } catch (e) { partyContacts = {}; }
     const shop = localStorage.getItem(SHOP_KEY);
     if (shop) $('shopName').value = shop;
   }
   function saveData() { localStorage.setItem(LEDGER_KEY, JSON.stringify(entries)); }
   function saveStock() { localStorage.setItem(STOCK_KEY, JSON.stringify(stockEntries)); }
   function saveExpenses() { localStorage.setItem(EXPENSE_KEY, JSON.stringify(expenseEntries)); }
+  function savePartyContacts() { localStorage.setItem(PARTY_KEY, JSON.stringify(partyContacts)); }
 
   function fmt(n) {
     return Number(n).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1017,7 +1321,7 @@
 
     const sel = $('commodityFilterSelect');
     const current = sel.value;
-    sel.innerHTML = '<option value="__all__">All commodities</option>';
+    sel.innerHTML = `<option value="__all__">${t('allCommodities')}</option>`;
     uniqueLedgerCommodities().forEach(c => {
       const opt = document.createElement('option');
       opt.value = c; opt.textContent = c;
@@ -1029,11 +1333,11 @@
   function renderFilterChips() {
     const row = $('filterRow');
     const parties = uniqueParties();
-    row.innerHTML = '<span class="flabel">Show:</span>';
+    row.innerHTML = `<span class="flabel" id="showLabelLedger">${t('showLabel')}</span>`;
 
     const allChip = document.createElement('button');
     allChip.className = 'chip' + (activeFilter === '__all__' ? ' active' : '');
-    allChip.textContent = 'All parties';
+    allChip.textContent = t('allParties');
     allChip.onclick = () => { activeFilter = '__all__'; render(); };
     row.appendChild(allChip);
 
@@ -1052,6 +1356,8 @@
     const credit = filtered.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
     const debit = filtered.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
     $('psName').textContent = activeFilter;
+    const phone = partyContacts[activeFilter];
+    $('psPhone').innerHTML = phone ? `<a href="tel:${escapeHtml(phone)}" style="color:inherit;">${escapeHtml(phone)}</a>` : '';
     $('psCredit').textContent = fmt(credit);
     $('psDebit').textContent = fmt(debit);
     $('psNet').textContent = fmt(credit - debit);
@@ -1060,8 +1366,8 @@
 
   function matchesSearch(e) {
     if (!searchTerm) return true;
-    const t = searchTerm.toLowerCase();
-    return e.party.toLowerCase().includes(t) || (e.note || '').toLowerCase().includes(t) || (e.commodity || '').toLowerCase().includes(t);
+    const term = searchTerm.toLowerCase();
+    return e.party.toLowerCase().includes(term) || (e.note || '').toLowerCase().includes(term) || (e.commodity || '').toLowerCase().includes(term);
   }
   function matchesCommodityFilter(e) {
     return ledgerCommodityFilter === '__all__' || e.commodity === ledgerCommodityFilter;
@@ -1125,13 +1431,14 @@
         $('editingId').value = id;
         $('dateInput').value = e.date;
         $('partyInput').value = e.party;
+        $('phoneInput').value = e.phone || partyContacts[e.party] || '';
         $('commodityInput').value = e.commodity || '';
         $('amountInput').value = e.amount;
         $('noteInput').value = e.note || '';
         setType(e.type);
-        $('entryPageTitle').textContent = 'Edit Entry';
-        $('entryPageSub').textContent = 'Update this transaction.';
-        $('submitBtnLabel').textContent = 'Save changes';
+        $('entryPageTitle').textContent = t('editEntryTitle');
+        $('entryPageSub').textContent = t('editEntrySub');
+        $('submitBtnLabel').textContent = t('saveChangesBtn');
         $('cancelEditBtn').hidden = false;
         showView('entry');
       });
@@ -1160,10 +1467,10 @@
   // ---------- Type toggle ----------
   $('typeCredit').addEventListener('click', () => setType('credit'));
   $('typeDebit').addEventListener('click', () => setType('debit'));
-  function setType(t) {
-    currentType = t;
-    $('typeCredit').classList.toggle('active', t === 'credit');
-    $('typeDebit').classList.toggle('active', t === 'debit');
+  function setType(type) {
+    currentType = type;
+    $('typeCredit').classList.toggle('active', type === 'credit');
+    $('typeDebit').classList.toggle('active', type === 'debit');
   }
 
   function resetEntryForm() {
@@ -1173,28 +1480,39 @@
     $('dateInput').value = todayStr();
     $('commodityInput').value = '';
     setType('credit');
-    $('entryPageTitle').textContent = 'New Entry';
-    $('entryPageSub').textContent = 'Add a credit (money received) or debit (money owed to you) transaction.';
-    $('submitBtnLabel').textContent = '+ Add Entry';
+    $('entryPageTitle').textContent = t('newEntryTitle');
+    $('entryPageSub').textContent = t('newEntrySub');
+    $('submitBtnLabel').textContent = t('addEntryBtn');
     $('cancelEditBtn').hidden = true;
     $('saveFlash').style.display = 'none';
   }
   $('cancelEditBtn').addEventListener('click', () => { resetEntryForm(); showView('all'); });
+
+  // Auto-fill phone when a known party name is typed/selected
+  $('partyInput').addEventListener('change', () => {
+    const p = $('partyInput').value.trim();
+    if (p && partyContacts[p] && !$('phoneInput').value) {
+      $('phoneInput').value = partyContacts[p];
+    }
+  });
 
   // ---------- Form submit (add or edit) ----------
   $('entryForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const date = $('dateInput').value || todayStr();
     const party = $('partyInput').value.trim();
+    const phone = $('phoneInput').value.trim();
     const commodity = $('commodityInput').value.trim();
     const amount = parseFloat($('amountInput').value);
     const note = $('noteInput').value.trim();
     if (!party || isNaN(amount) || amount <= 0) return;
 
+    if (phone) { partyContacts[party] = phone; savePartyContacts(); }
+
     if (editingId !== null) {
       const idx = entries.findIndex(e => e.id === editingId);
       if (idx !== -1) {
-        entries[idx] = { ...entries[idx], date, party, commodity, amount, type: currentType, note };
+        entries[idx] = { ...entries[idx], date, party, phone, commodity, amount, type: currentType, note };
       }
       saveData();
       renderHomeSummary();
@@ -1203,10 +1521,11 @@
       return;
     }
 
-    entries.push({ id: nextId(), date, party, commodity, amount, type: currentType, note });
+    entries.push({ id: nextId(), date, party, phone, commodity, amount, type: currentType, note });
     saveData();
 
     $('partyInput').value = '';
+    $('phoneInput').value = '';
     $('commodityInput').value = '';
     $('amountInput').value = '';
     $('noteInput').value = '';
@@ -1220,7 +1539,7 @@
 
   // ---------- Ledger: Export / Import Excel ----------
   $('exportBtn').addEventListener('click', () => {
-    if (entries.length === 0) { alert('No entries to export yet.'); return; }
+    if (entries.length === 0) { alert(t('noExportLedger')); return; }
     const rows = entries.slice().sort((a, b) => a.date.localeCompare(b.date))
       .map(e => ({ Date: e.date, Party: e.party, Commodity: e.commodity || '', Type: e.type, Amount: e.amount, Note: e.note || '' }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -1265,7 +1584,7 @@
 
   $('printBtn').addEventListener('click', () => window.print());
   $('clearBtn').addEventListener('click', () => {
-    if (confirm('This will permanently delete all ledger entries. Continue?')) {
+    if (confirm(t('confirmClearLedger'))) {
       entries = []; saveData(); activeFilter = '__all__'; searchTerm = ''; $('searchInput').value = ''; render();
     }
   });
@@ -1284,10 +1603,10 @@
   function renderStockFilterChips() {
     const row = $('stockFilterRow');
     const commodities = uniqueCommodities();
-    row.innerHTML = '<span class="flabel">Show:</span>';
+    row.innerHTML = `<span class="flabel" id="showLabelStock">${t('showLabel')}</span>`;
     const allChip = document.createElement('button');
     allChip.className = 'chip' + (activeCommodityFilter === '__all__' ? ' active' : '');
-    allChip.textContent = 'All commodities';
+    allChip.textContent = t('allCommodities');
     allChip.onclick = () => { activeCommodityFilter = '__all__'; renderStock(); };
     row.appendChild(allChip);
     commodities.forEach(c => {
@@ -1344,7 +1663,7 @@
   function renderAnalysisCommodityOptions() {
     const sel = $('analysisCommodity');
     const current = sel.value;
-    sel.innerHTML = '<option value="">— select —</option>';
+    sel.innerHTML = `<option value="">${t('selectPlaceholder')}</option>`;
     uniqueCommodities().forEach(c => {
       const opt = document.createElement('option');
       opt.value = c; opt.textContent = c;
@@ -1373,10 +1692,10 @@
   function renderSeasonalList() {
     const commodity = $('analysisCommodity').value;
     const box = $('seasonalList');
-    if (!commodity) { box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">Select a commodity above.</div>'; return; }
+    if (!commodity) { box.innerHTML = `<div style="font-size:12px;color:var(--ink-faded);">${t('selectCommodityAbove')}</div>`; return; }
     const seasonal = seasonalAverages(commodity);
     const months = Object.keys(seasonal);
-    if (months.length === 0) { box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">No data logged yet for this commodity.</div>'; return; }
+    if (months.length === 0) { box.innerHTML = `<div style="font-size:12px;color:var(--ink-faded);">${t('noDataCommodity')}</div>`; return; }
     const maxAvg = Math.max(...months.map(m => seasonal[m].avg));
     box.innerHTML = '';
     for (let m = 1; m <= 12; m++) {
@@ -1385,7 +1704,7 @@
       const row = document.createElement('div');
       row.className = 'month-row';
       row.innerHTML = `
-        <div class="m">${MONTH_NAMES[m-1]}</div>
+        <div class="m">${monthLabel(m)}</div>
         <div class="bar-wrap"><div class="bar" style="width:${pct}%;"></div></div>
         <div class="v">${fmt(seasonal[m].avg)}</div>
       `;
@@ -1398,8 +1717,8 @@
     const commodity = $('analysisCommodity').value;
     const price = parseFloat($('signalPrice').value);
     const box = $('signalResult');
-    if (!commodity) { alert('Select a commodity in the panel on the left first.'); return; }
-    if (isNaN(price) || price <= 0) { alert('Enter a valid price.'); return; }
+    if (!commodity) { alert(t('selectCommodityFirst')); return; }
+    if (isNaN(price) || price <= 0) { alert(t('enterValidPrice')); return; }
 
     const seasonal = seasonalAverages(commodity);
     const currentMonth = new Date().getMonth() + 1;
@@ -1407,18 +1726,18 @@
 
     box.classList.remove('buy', 'sell', 'neutral');
     if (!data) {
-      box.textContent = `No historical data for ${commodity} in ${MONTH_NAMES[currentMonth-1]} yet. Log a few more entries to get a signal.`;
+      box.textContent = t('noDataForCommodityMonth').replace('{c}', commodity).replace('{m}', monthLabel(currentMonth));
       box.classList.add('neutral');
       box.classList.add('show');
       return;
     }
     const diffPct = ((price - data.avg) / data.avg) * 100;
     let verdict, cls;
-    if (diffPct <= -10) { verdict = 'GOOD TIME TO BUY — price is notably below the seasonal average.'; cls = 'buy'; }
-    else if (diffPct >= 10) { verdict = 'GOOD TIME TO SELL — price is notably above the seasonal average.'; cls = 'sell'; }
-    else { verdict = 'Price looks normal for this time of year — no strong signal.'; cls = 'neutral'; }
+    if (diffPct <= -10) { verdict = t('verdictBuy'); cls = 'buy'; }
+    else if (diffPct >= 10) { verdict = t('verdictSell'); cls = 'sell'; }
+    else { verdict = t('verdictNeutral'); cls = 'neutral'; }
 
-    box.innerHTML = `${commodity} in ${MONTH_NAMES[currentMonth-1]}: historical avg = ${fmt(data.avg)} (from ${data.count} record(s)), today's price = ${fmt(price)} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)<br><strong>${verdict}</strong>`;
+    box.innerHTML = `${commodity} — ${monthLabel(currentMonth)}: ${t('historicalAvg')} = ${fmt(data.avg)} (${data.count} ${t('recordsWord')}), ${t('todaysPrice')} = ${fmt(price)} (${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%)<br><strong>${verdict}</strong>`;
     box.classList.add(cls, 'show');
   });
 
@@ -1456,7 +1775,7 @@
   });
 
   $('stockExportBtn').addEventListener('click', () => {
-    if (stockEntries.length === 0) { alert('No stock entries to export yet.'); return; }
+    if (stockEntries.length === 0) { alert(t('noExportStock')); return; }
     const rows = stockEntries.slice().sort((a, b) => a.date.localeCompare(b.date))
       .map(e => ({ Date: e.date, Commodity: e.commodity, BuyPrice: e.buyPrice, SellPrice: e.sellPrice ?? '', Quantity: e.quantity, Note: e.note || '' }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -1501,7 +1820,7 @@
   });
 
   $('stockClearBtn').addEventListener('click', () => {
-    if (confirm('This will permanently delete all stock entries. Continue?')) {
+    if (confirm(t('confirmClearStock'))) {
       stockEntries = []; saveStock(); activeCommodityFilter = '__all__'; renderStock();
     }
   });
@@ -1509,24 +1828,26 @@
   // ================= DAILY EXPENSES =================
   function populateCategorySelect() {
     const sel = $('expenseCategory');
-    sel.innerHTML = '<option value="">— select —</option>';
+    const current = sel.value;
+    sel.innerHTML = `<option value="">${t('selectPlaceholder')}</option>`;
     Object.keys(EXPENSE_CATEGORIES).forEach(cat => {
       const opt = document.createElement('option');
-      opt.value = cat; opt.textContent = cat;
+      opt.value = cat; opt.textContent = categoryLabel(cat);
       sel.appendChild(opt);
     });
+    if (Object.keys(EXPENSE_CATEGORIES).includes(current)) sel.value = current;
   }
 
   function updateExpenseTypeBadge() {
     const cat = $('expenseCategory').value;
     const badge = $('expenseTypeBadge');
     if (!cat) {
-      badge.textContent = 'Select a category';
+      badge.textContent = t('selectCategory');
       badge.className = 'type-badge none';
       return;
     }
     const type = EXPENSE_CATEGORIES[cat];
-    badge.textContent = type === 'debit' ? '→ Debit (expense)' : '→ Credit (income)';
+    badge.textContent = type === 'debit' ? t('debitArrow') : t('creditArrow');
     badge.className = 'type-badge ' + type;
   }
   $('expenseCategory').addEventListener('change', updateExpenseTypeBadge);
@@ -1537,7 +1858,7 @@
     $('expenseForm').reset();
     $('expenseDate').value = todayStr();
     updateExpenseTypeBadge();
-    $('expenseSubmitLabel').textContent = '+ Add Expense';
+    $('expenseSubmitLabel').textContent = t('addExpenseBtn');
     $('expenseCancelBtn').hidden = true;
     $('expenseSaveFlash').style.display = 'none';
   }
@@ -1578,8 +1899,8 @@
 
   function matchesExpenseSearch(e) {
     if (!expenseSearchTerm) return true;
-    const t = expenseSearchTerm.toLowerCase();
-    return e.category.toLowerCase().includes(t) || (e.note || '').toLowerCase().includes(t);
+    const term = expenseSearchTerm.toLowerCase();
+    return e.category.toLowerCase().includes(term) || categoryLabel(e.category).toLowerCase().includes(term) || (e.note || '').toLowerCase().includes(term);
   }
 
   function renderExpenseTable() {
@@ -1601,8 +1922,8 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${e.date}</td>
-        <td class="party">${escapeHtml(e.category)}</td>
-        <td class="${e.type === 'debit' ? 'debit-amt' : 'credit-amt'}">${e.type === 'debit' ? 'Debit' : 'Credit'}</td>
+        <td class="party">${escapeHtml(categoryLabel(e.category))}</td>
+        <td class="${e.type === 'debit' ? 'debit-amt' : 'credit-amt'}">${e.type === 'debit' ? t('debitWord') : t('creditWord')}</td>
         <td class="num ${e.type === 'debit' ? 'debit-amt' : 'credit-amt'}">${fmt(e.amount)}</td>
         <td class="note">${escapeHtml(e.note || '')}</td>
         <td class="actions-cell">
@@ -1634,7 +1955,7 @@
         updateExpenseTypeBadge();
         $('expenseAmount').value = e.amount;
         $('expenseNote').value = e.note || '';
-        $('expenseSubmitLabel').textContent = 'Save changes';
+        $('expenseSubmitLabel').textContent = t('saveChangesBtn');
         $('expenseCancelBtn').hidden = false;
         window.scrollTo({ top: 0, behavior: 'instant' });
         $('expenseCategory').focus();
@@ -1676,7 +1997,7 @@
     const box = $('reportCategoryBreakdown');
     const cats = Object.keys(byCategory);
     if (cats.length === 0) {
-      box.innerHTML = '<div style="font-size:12px;color:var(--ink-faded);">No expenses logged for this month.</div>';
+      box.innerHTML = `<div style="font-size:12px;color:var(--ink-faded);">${t('noExpenseThisMonth')}</div>`;
       return;
     }
     box.innerHTML = '';
@@ -1684,7 +2005,7 @@
       const row = document.createElement('div');
       row.className = 'category-row';
       row.innerHTML = `
-        <span class="cname">${escapeHtml(cat)}</span>
+        <span class="cname">${escapeHtml(categoryLabel(cat))}</span>
         <span class="cval ${byCategory[cat].type}">${fmt(byCategory[cat].total)}</span>
       `;
       box.appendChild(row);
@@ -1695,7 +2016,7 @@
 
   // ---------- Expense Export / Import ----------
   $('expenseExportBtn').addEventListener('click', () => {
-    if (expenseEntries.length === 0) { alert('No expenses to export yet.'); return; }
+    if (expenseEntries.length === 0) { alert(t('noExportExpense')); return; }
     const rows = expenseEntries.slice().sort((a, b) => a.date.localeCompare(b.date))
       .map(e => ({ Date: e.date, Category: e.category, Type: e.type, Amount: e.amount, Note: e.note || '' }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -1740,14 +2061,14 @@
   });
 
   $('expenseClearBtn').addEventListener('click', () => {
-    if (confirm('This will permanently delete all expense entries. Continue?')) {
+    if (confirm(t('confirmClearExpense'))) {
       expenseEntries = []; saveExpenses(); renderExpenses(); renderMonthReport();
     }
   });
 
   // ---------- Init ----------
   loadData();
-  populateCategorySelect();
+  applyTranslations();
   renderHomeSummary();
   history.replaceState({ view: 'home' }, '', '#home');
   showView('home', true);
