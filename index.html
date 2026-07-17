@@ -431,6 +431,23 @@
   .category-row .cval.debit { color: var(--ink-debit); }
   .category-row .cval.credit { color: var(--ink-credit); }
 
+  /* overdue rows are clickable */
+  .category-row.clickable { cursor: pointer; }
+  .category-row.clickable:hover { background: rgba(184, 147, 90, 0.1); }
+  .category-row .cdays { font-size: 11px; color: var(--ink-faded); margin-left: 8px; }
+
+  /* sortable table headers */
+  table.ledger thead th.sortable { cursor: pointer; user-select: none; }
+  table.ledger thead th.sortable:hover { background: var(--cover-dark); }
+
+  /* undo toast */
+  .undo-toast {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: rgba(184, 147, 90, 0.15); border: 1px solid var(--gold);
+    padding: 9px 14px; border-radius: 2px; font-size: 12.5px; margin-bottom: 14px;
+  }
+  .undo-toast button { white-space: nowrap; }
+
   /* ---------- Stock & Price section ---------- */
   .stock-grid {
     display: grid;
@@ -565,6 +582,11 @@
           <div class="value" id="homeNet">0</div>
         </div>
       </div>
+
+      <div class="report-box" style="margin-top:20px;">
+        <h3 id="overdueHeading">Overdue Customers (30+ days)</h3>
+        <div id="overdueList"></div>
+      </div>
     </section>
 
     <!-- ========== NEW ENTRY VIEW ========== -->
@@ -656,16 +678,20 @@
         <div class="stat net"><div class="label" id="lblPsNet">Balance</div><div class="val" id="psNet">0</div></div>
       </div>
 
+      <div class="undo-toast" id="ledgerUndoToast" style="display:none;">
+        <span id="undoTextLedger">Deleted.</span> <button class="ghost-btn" id="undoBtnLedger">Undo</button>
+      </div>
+
       <div class="sheet-wrap">
         <table class="ledger" id="ledgerTable">
           <thead>
             <tr>
-              <th id="thDate1">Date</th>
-              <th id="thParty">Party</th>
-              <th id="thCommodity1">Commodity</th>
+              <th id="thDate1" class="sortable">Date</th>
+              <th id="thParty" class="sortable">Party</th>
+              <th id="thCommodity1" class="sortable">Commodity</th>
               <th id="thNote1">Note</th>
-              <th class="num" id="thCredit1">Credit</th>
-              <th class="num" id="thDebit1">Debit</th>
+              <th class="num sortable" id="thCredit1">Credit</th>
+              <th class="num sortable" id="thDebit1">Debit</th>
               <th class="num" id="thBalance1">Balance</th>
               <th></th>
             </tr>
@@ -738,16 +764,20 @@
         </div>
       </div>
 
+      <div class="undo-toast" id="stockUndoToast" style="display:none;">
+        <span id="undoTextStock">Deleted.</span> <button class="ghost-btn" id="undoBtnStock">Undo</button>
+      </div>
+
       <div class="sheet-wrap" style="margin-top:14px;">
         <table class="ledger" id="stockTable">
           <thead>
             <tr>
-              <th id="thDate2">Date</th>
-              <th id="thCommodity2">Commodity</th>
-              <th class="num" id="thBuy">Buy</th>
-              <th class="num" id="thSell">Sell</th>
-              <th class="num" id="thQty">Qty</th>
-              <th class="num" id="thProfit">Profit</th>
+              <th id="thDate2" class="sortable">Date</th>
+              <th id="thCommodity2" class="sortable">Commodity</th>
+              <th class="num sortable" id="thBuy">Buy</th>
+              <th class="num sortable" id="thSell">Sell</th>
+              <th class="num sortable" id="thQty">Qty</th>
+              <th class="num sortable" id="thProfit">Profit</th>
               <th id="thNote2">Note</th>
               <th></th>
             </tr>
@@ -828,14 +858,18 @@
         </div>
       </div>
 
+      <div class="undo-toast" id="expenseUndoToast" style="display:none;">
+        <span id="undoTextExpense">Deleted.</span> <button class="ghost-btn" id="undoBtnExpense">Undo</button>
+      </div>
+
       <div class="sheet-wrap">
         <table class="ledger" id="expenseTable">
           <thead>
             <tr>
-              <th id="thDate3">Date</th>
-              <th id="thCategory">Category</th>
-              <th id="thType">Type</th>
-              <th class="num" id="thAmount">Amount</th>
+              <th id="thDate3" class="sortable">Date</th>
+              <th id="thCategory" class="sortable">Category</th>
+              <th id="thType" class="sortable">Type</th>
+              <th class="num sortable" id="thAmount">Amount</th>
               <th id="thNote3">Note</th>
               <th></th>
             </tr>
@@ -893,6 +927,16 @@
   let expenseSearchTerm = '';
   let editingId = null;
   let editingExpenseId = null;
+
+  // Sort state per table: { key, dir, headerId }
+  let ledgerSort = null;
+  let stockSort = null;
+  let expenseSort = null;
+
+  // Undo state per table: { item, index }
+  let lastDeletedLedger = null;
+  let lastDeletedStock = null;
+  let lastDeletedExpense = null;
 
   const EXPENSE_CATEGORIES = {
     'Salary': 'credit',
@@ -993,6 +1037,11 @@
       reportHeading: 'Month-end report', reportSub: 'Pick a month to see its income vs expense breakdown.',
       printReport: 'Print this report', reportCredit: 'Credit (income)', reportDebit: 'Debit (expense)',
       reportNet: 'Net profit/loss', noExpenseThisMonth: 'No expenses logged for this month.',
+      netWorthHeading: 'Business Health', ledgerNetLabel: 'Ledger Net', stockProfitLabel: 'Stock Profit',
+      expenseNetLabel: 'Expense Net', overallNetLabel: 'Overall Net',
+      overdueHeading: 'Overdue Customers (30+ days)', noOverdue: 'No customers overdue — nice work.',
+      daysOverdue: 'days', owesLabel: 'owes',
+      deletedText: 'Deleted.', undoBtn: 'Undo',
       confirmClearLedger: 'This will permanently delete all ledger entries. Continue?',
       confirmClearStock: 'This will permanently delete all stock entries. Continue?',
       confirmClearExpense: 'This will permanently delete all expense entries. Continue?',
@@ -1042,15 +1091,20 @@
       checkSignal: 'সংকেত দেখুন', selectCommodityFirst: 'প্রথমে বাম পাশের প্যানেলে একটি পণ্য নির্বাচন করুন।',
       enterValidPrice: 'সঠিক দাম লিখুন।',
       expenseViewTitle: 'দৈনিক খরচ',
-      expenseViewSub: 'একটি ক্যাটাগরি নির্বাচন করুন — সিস্টেম নিজেই আয় বা খরচ ঠিক করবে।',
+      expenseViewSub: 'একটি ক্যাটাগরি নির্বাচন করুন — সিস্টেম নিজেই ডেবিট বা ক্রেডিট ঠিক করবে।',
       lblExpenseDate: 'তারিখ', lblExpenseCategory: 'ক্যাটাগরি', lblExpenseAmount: 'পরিমাণ (৳)', lblExpenseNote: 'নোট',
-      selectCategory: 'একটি ক্যাটাগরি নির্বাচন করুন', debitArrow: '→ খরচ (ডেবিট)', creditArrow: '→ আয় (ক্রেডিট)',
+      selectCategory: 'একটি ক্যাটাগরি নির্বাচন করুন',  debitArrow: '→ খরচ (ডেবিট)', creditArrow: '→ আয় (ক্রেডিট)',
       addExpenseBtn: '+ খরচ যোগ করুন', thType: 'ধরন', thAmount: 'পরিমাণ', debitWord: 'ডেবিট', creditWord: 'ক্রেডিট',
       emptyExpense: 'এখনো কোনো খরচ যোগ করা হয়নি — উপরে প্রথমটি যোগ করুন।',
       expTotalCredit: 'মোট ক্রেডিট (আয়)', expTotalDebit: 'মোট ডেবিট (খরচ)', expTotalNet: 'নিট',
       reportHeading: 'মাস শেষের রিপোর্ট', reportSub: 'আয় ও খরচের হিসাব দেখতে একটি মাস নির্বাচন করুন।',
       printReport: 'রিপোর্ট প্রিন্ট করুন', reportCredit: 'ক্রেডিট (আয়)', reportDebit: 'ডেবিট (খরচ)',
       reportNet: 'নিট লাভ/ক্ষতি', noExpenseThisMonth: 'এই মাসে কোনো খরচ লেখা হয়নি।',
+      netWorthHeading: 'ব্যবসার স্বাস্থ্য', ledgerNetLabel: 'হিসাব নিট', stockProfitLabel: 'মজুদ লাভ',
+      expenseNetLabel: 'খরচ নিট', overallNetLabel: 'সামগ্রিক নিট',
+      overdueHeading: 'বকেয়া গ্রাহক (৩০+ দিন)', noOverdue: 'কোনো গ্রাহকের বকেয়া নেই — চমৎকার!',
+      daysOverdue: 'দিন', owesLabel: 'পাওনা',
+      deletedText: 'মুছে ফেলা হয়েছে।', undoBtn: 'ফিরিয়ে আনুন',
       confirmClearLedger: 'এটি স্থায়ীভাবে সব হিসাব মুছে ফেলবে। চালিয়ে যাবেন?',
       confirmClearStock: 'এটি স্থায়ীভাবে সব মজুদ তথ্য মুছে ফেলবে। চালিয়ে যাবেন?',
       confirmClearExpense: 'এটি স্থায়ীভাবে সব খরচ মুছে ফেলবে। চালিয়ে যাবেন?',
@@ -1091,6 +1145,10 @@
     $('lblHomeCredit').textContent = t('homeCreditLabel');
     $('lblHomeDebit').textContent = t('homeDebitLabel');
     $('lblHomeNet').textContent = t('homeNetLabel');
+    $('overdueHeading').textContent = t('overdueHeading');
+    $('undoBtnLedger').textContent = t('undoBtn');
+    $('undoBtnStock').textContent = t('undoBtn');
+    $('undoBtnExpense').textContent = t('undoBtn');
 
     document.querySelectorAll('.back-link').forEach(el => { el.innerHTML = t('backLink'); });
 
@@ -1202,6 +1260,7 @@
     currentLang = currentLang === 'en' ? 'bn' : 'en';
     localStorage.setItem(LANG_KEY, currentLang);
     applyTranslations();
+    renderOverdue();
     if (!$('allView').hidden) render();
     if (!$('stockView').hidden) renderStock();
     if (!$('expenseView').hidden) { renderExpenses(); renderMonthReport(); }
@@ -1224,6 +1283,7 @@
       }
     }
 
+    if (name === 'home') renderHomeSummary();
     if (name === 'bizHome') renderHomeSummary();
     if (name === 'entry' && editingId === null) {
       $('saveFlash').style.display = 'none';
@@ -1292,6 +1352,39 @@
     return [...new Set(entries.map(e => e.commodity).filter(Boolean).concat(uniqueCommodities()))].sort();
   }
 
+  // ---------- Generic sorting helper ----------
+  // sortState: { key, dir, headerId } | null. valueFn(item, key) returns comparable value for that key.
+  function applySort(list, sortState, valueFn) {
+    if (!sortState) return list;
+    const { key, dir } = sortState;
+    return [...list].sort((a, b) => {
+      let av = valueFn(a, key), bv = valueFn(b, key);
+      if (typeof av === 'string') { av = av.toLowerCase(); bv = String(bv).toLowerCase(); }
+      if (av < bv) return dir === 'asc' ? -1 : 1;
+      if (av > bv) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function toggleSort(currentState, key, headerId) {
+    if (currentState && currentState.key === key) {
+      return { key, dir: currentState.dir === 'asc' ? 'desc' : 'asc', headerId };
+    }
+    return { key, dir: 'asc', headerId };
+  }
+
+  function sortArrow(headerId, sortState) {
+    if (!sortState || sortState.headerId !== headerId) return '';
+    return sortState.dir === 'asc' ? ' ▲' : ' ▼';
+  }
+
+  function daysBetween(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.floor((todayMidnight - d) / 86400000);
+  }
+
   // ---------- Home summary ----------
   function renderHomeSummary() {
     const totalCredit = entries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
@@ -1299,6 +1392,45 @@
     $('homeCredit').textContent = fmt(totalCredit);
     $('homeDebit').textContent = fmt(totalDebit);
     $('homeNet').textContent = fmt(totalCredit - totalDebit);
+    renderOverdue();
+  }
+
+  // ---------- Overdue customers (30+ days, positive balance owed to you) ----------
+  function renderOverdue() {
+    const box = $('overdueList');
+    if (!box) return;
+
+    const byParty = {};
+    entries.forEach(e => {
+      if (!byParty[e.party]) byParty[e.party] = { balance: 0, lastDate: e.date };
+      byParty[e.party].balance += e.type === 'debit' ? e.amount : -e.amount;
+      if (e.date > byParty[e.party].lastDate) byParty[e.party].lastDate = e.date;
+    });
+
+    const overdue = Object.keys(byParty)
+      .map(p => ({ party: p, balance: byParty[p].balance, days: daysBetween(byParty[p].lastDate) }))
+      .filter(x => x.balance > 0 && x.days >= 30)
+      .sort((a, b) => b.days - a.days);
+
+    if (overdue.length === 0) {
+      box.innerHTML = `<div style="font-size:12px;color:var(--ink-faded);">${t('noOverdue')}</div>`;
+      return;
+    }
+
+    box.innerHTML = '';
+    overdue.forEach(o => {
+      const row = document.createElement('div');
+      row.className = 'category-row clickable';
+      row.innerHTML = `
+        <span class="cname">${escapeHtml(o.party)}<span class="cdays">${o.days} ${t('daysOverdue')}</span></span>
+        <span class="cval debit">${fmt(o.balance)}</span>
+      `;
+      row.addEventListener('click', () => {
+        activeFilter = o.party;
+        showView('all');
+      });
+      box.appendChild(row);
+    });
   }
 
   // ================= LEDGER: All Entries =================
@@ -1378,13 +1510,35 @@
     const empty = $('emptyState');
     body.innerHTML = '';
 
-    const filtered = entries
+    const baseFiltered = entries
       .filter(e => activeFilter === '__all__' || e.party === activeFilter)
       .filter(matchesCommodityFilter)
-      .filter(matchesSearch)
-      .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+      .filter(matchesSearch);
 
-    renderPartyStatement(filtered);
+    // Balance is always computed in chronological order, independent of display sort
+    const chronological = [...baseFiltered].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    const balanceMap = {};
+    let running = 0;
+    chronological.forEach(e => {
+      running += e.type === 'credit' ? e.amount : -e.amount;
+      balanceMap[e.id] = running;
+    });
+
+    const filtered = ledgerSort
+      ? applySort(baseFiltered, ledgerSort, (item, key) => {
+          if (key === 'credit') return item.type === 'credit' ? item.amount : -1;
+          if (key === 'debit') return item.type === 'debit' ? item.amount : -1;
+          return item[key] || '';
+        })
+      : chronological;
+
+    renderPartyStatement(baseFiltered);
+
+    $('thDate1').textContent = t('thDate') + sortArrow('thDate1', ledgerSort);
+    $('thParty').textContent = t('thParty') + sortArrow('thParty', ledgerSort);
+    $('thCommodity1').textContent = t('thCommodity') + sortArrow('thCommodity1', ledgerSort);
+    $('thCredit1').textContent = t('thCredit') + sortArrow('thCredit1', ledgerSort);
+    $('thDebit1').textContent = t('thDebit') + sortArrow('thDebit1', ledgerSort);
 
     if (filtered.length === 0) {
       empty.style.display = 'block';
@@ -1394,9 +1548,7 @@
     empty.style.display = 'none';
     $('ledgerTable').closest('.sheet-wrap').style.display = 'block';
 
-    let running = 0;
     filtered.forEach(e => {
-      running += e.type === 'credit' ? e.amount : -e.amount;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${e.date}</td>
@@ -1405,7 +1557,7 @@
         <td class="note">${escapeHtml(e.note || '')}</td>
         <td class="num credit-amt">${e.type === 'credit' ? fmt(e.amount) : ''}</td>
         <td class="num debit-amt">${e.type === 'debit' ? fmt(e.amount) : ''}</td>
-        <td class="num balance-cell">${fmt(running)}</td>
+        <td class="num balance-cell">${fmt(balanceMap[e.id])}</td>
         <td class="actions-cell">
           <button class="row-btn edit" title="Edit" data-id="${e.id}">✎</button>
           <button class="row-btn del" title="Delete" data-id="${e.id}">×</button>
@@ -1417,9 +1569,13 @@
     body.querySelectorAll('.row-btn.del').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = Number(btn.dataset.id);
-        entries = entries.filter(e => e.id !== id);
+        const index = entries.findIndex(e => e.id === id);
+        if (index === -1) return;
+        lastDeletedLedger = { item: entries[index], index };
+        entries.splice(index, 1);
         saveData();
         render();
+        showUndoToast('Ledger');
       });
     });
     body.querySelectorAll('.row-btn.edit').forEach(btn => {
@@ -1463,6 +1619,34 @@
 
   $('searchInput').addEventListener('input', (e) => { searchTerm = e.target.value; renderTable(); });
   $('commodityFilterSelect').addEventListener('change', (e) => { ledgerCommodityFilter = e.target.value; renderTable(); });
+
+  // ---------- Generic undo toast ----------
+  const undoTimers = {};
+  function showUndoToast(which) {
+    const toast = $(which.charAt(0).toLowerCase() + which.slice(1) + 'UndoToast');
+    const textEl = $('undoText' + which);
+    if (!toast || !textEl) return;
+    textEl.textContent = t('deletedText');
+    toast.style.display = 'flex';
+    if (undoTimers[which]) clearTimeout(undoTimers[which]);
+    undoTimers[which] = setTimeout(() => { toast.style.display = 'none'; }, 6000);
+  }
+  $('undoBtnLedger').addEventListener('click', () => {
+    if (!lastDeletedLedger) return;
+    const { item, index } = lastDeletedLedger;
+    entries.splice(Math.min(index, entries.length), 0, item);
+    saveData();
+    lastDeletedLedger = null;
+    $('ledgerUndoToast').style.display = 'none';
+    render();
+  });
+
+  // ---------- Ledger sortable headers ----------
+  $('thDate1').addEventListener('click', () => { ledgerSort = toggleSort(ledgerSort, 'date', 'thDate1'); renderTable(); });
+  $('thParty').addEventListener('click', () => { ledgerSort = toggleSort(ledgerSort, 'party', 'thParty'); renderTable(); });
+  $('thCommodity1').addEventListener('click', () => { ledgerSort = toggleSort(ledgerSort, 'commodity', 'thCommodity1'); renderTable(); });
+  $('thCredit1').addEventListener('click', () => { ledgerSort = toggleSort(ledgerSort, 'credit', 'thCredit1'); renderTable(); });
+  $('thDebit1').addEventListener('click', () => { ledgerSort = toggleSort(ledgerSort, 'debit', 'thDebit1'); renderTable(); });
 
   // ---------- Type toggle ----------
   $('typeCredit').addEventListener('click', () => setType('credit'));
@@ -1622,9 +1806,27 @@
     const body = $('stockBody');
     const empty = $('stockEmptyState');
     body.innerHTML = '';
-    const filtered = stockEntries
-      .filter(e => activeCommodityFilter === '__all__' || e.commodity === activeCommodityFilter)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const baseFiltered = stockEntries
+      .filter(e => activeCommodityFilter === '__all__' || e.commodity === activeCommodityFilter);
+
+    const profitOf = (e) => (e.sellPrice != null && e.sellPrice !== '') ? (e.sellPrice - e.buyPrice) * e.quantity : -Infinity;
+
+    const filtered = stockSort
+      ? applySort(baseFiltered, stockSort, (item, key) => {
+          if (key === 'buyPrice') return item.buyPrice;
+          if (key === 'sellPrice') return item.sellPrice != null && item.sellPrice !== '' ? item.sellPrice : -Infinity;
+          if (key === 'quantity') return item.quantity;
+          if (key === 'profit') return profitOf(item);
+          return item[key] || '';
+        })
+      : [...baseFiltered].sort((a, b) => a.date.localeCompare(b.date));
+
+    $('thDate2').textContent = t('thDate') + sortArrow('thDate2', stockSort);
+    $('thCommodity2').textContent = t('thCommodity') + sortArrow('thCommodity2', stockSort);
+    $('thBuy').textContent = t('thBuy') + sortArrow('thBuy', stockSort);
+    $('thSell').textContent = t('thSell') + sortArrow('thSell', stockSort);
+    $('thQty').textContent = t('thQty') + sortArrow('thQty', stockSort);
+    $('thProfit').textContent = t('thProfit') + sortArrow('thProfit', stockSort);
 
     if (filtered.length === 0) {
       empty.style.display = 'block';
@@ -1653,9 +1855,13 @@
     body.querySelectorAll('.row-btn.del').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = Number(btn.dataset.id);
-        stockEntries = stockEntries.filter(e => e.id !== id);
+        const index = stockEntries.findIndex(e => e.id === id);
+        if (index === -1) return;
+        lastDeletedStock = { item: stockEntries[index], index };
+        stockEntries.splice(index, 1);
         saveStock();
         renderStock();
+        showUndoToast('Stock');
       });
     });
   }
@@ -1748,6 +1954,24 @@
     renderAnalysisCommodityOptions();
     renderSeasonalList();
   }
+
+  // ---------- Stock sortable headers ----------
+  $('thDate2').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'date', 'thDate2'); renderStockTable(); });
+  $('thCommodity2').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'commodity', 'thCommodity2'); renderStockTable(); });
+  $('thBuy').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'buyPrice', 'thBuy'); renderStockTable(); });
+  $('thSell').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'sellPrice', 'thSell'); renderStockTable(); });
+  $('thQty').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'quantity', 'thQty'); renderStockTable(); });
+  $('thProfit').addEventListener('click', () => { stockSort = toggleSort(stockSort, 'profit', 'thProfit'); renderStockTable(); });
+
+  $('undoBtnStock').addEventListener('click', () => {
+    if (!lastDeletedStock) return;
+    const { item, index } = lastDeletedStock;
+    stockEntries.splice(Math.min(index, stockEntries.length), 0, item);
+    saveStock();
+    lastDeletedStock = null;
+    $('stockUndoToast').style.display = 'none';
+    renderStock();
+  });
 
   $('stockForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -1908,7 +2132,20 @@
     const empty = $('expenseEmptyState');
     body.innerHTML = '';
 
-    const filtered = expenseEntries.filter(matchesExpenseSearch).sort((a, b) => a.date.localeCompare(b.date));
+    const baseFiltered = expenseEntries.filter(matchesExpenseSearch);
+    const filtered = expenseSort
+      ? applySort(baseFiltered, expenseSort, (item, key) => {
+          if (key === 'category') return categoryLabel(item.category);
+          if (key === 'type') return item.type === 'debit' ? t('debitWord') : t('creditWord');
+          if (key === 'amount') return item.amount;
+          return item[key] || '';
+        })
+      : [...baseFiltered].sort((a, b) => a.date.localeCompare(b.date));
+
+    $('thDate3').textContent = t('thDate') + sortArrow('thDate3', expenseSort);
+    $('thCategory').textContent = t('lblExpenseCategory') + sortArrow('thCategory', expenseSort);
+    $('thType').textContent = t('thType') + sortArrow('thType', expenseSort);
+    $('thAmount').textContent = t('thAmount') + sortArrow('thAmount', expenseSort);
 
     if (filtered.length === 0) {
       empty.style.display = 'block';
@@ -1937,10 +2174,14 @@
     body.querySelectorAll('.row-btn.del').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = Number(btn.dataset.id);
-        expenseEntries = expenseEntries.filter(e => e.id !== id);
+        const index = expenseEntries.findIndex(e => e.id === id);
+        if (index === -1) return;
+        lastDeletedExpense = { item: expenseEntries[index], index };
+        expenseEntries.splice(index, 1);
         saveExpenses();
         renderExpenses();
         renderMonthReport();
+        showUndoToast('Expense');
       });
     });
     body.querySelectorAll('.row-btn.edit').forEach(btn => {
@@ -1975,6 +2216,23 @@
     renderExpenseTable();
     renderExpenseSummary();
   }
+
+  // ---------- Expense sortable headers ----------
+  $('thDate3').addEventListener('click', () => { expenseSort = toggleSort(expenseSort, 'date', 'thDate3'); renderExpenseTable(); });
+  $('thCategory').addEventListener('click', () => { expenseSort = toggleSort(expenseSort, 'category', 'thCategory'); renderExpenseTable(); });
+  $('thType').addEventListener('click', () => { expenseSort = toggleSort(expenseSort, 'type', 'thType'); renderExpenseTable(); });
+  $('thAmount').addEventListener('click', () => { expenseSort = toggleSort(expenseSort, 'amount', 'thAmount'); renderExpenseTable(); });
+
+  $('undoBtnExpense').addEventListener('click', () => {
+    if (!lastDeletedExpense) return;
+    const { item, index } = lastDeletedExpense;
+    expenseEntries.splice(Math.min(index, expenseEntries.length), 0, item);
+    saveExpenses();
+    lastDeletedExpense = null;
+    $('expenseUndoToast').style.display = 'none';
+    renderExpenses();
+    renderMonthReport();
+  });
 
   // ---------- Month-end report ----------
   function renderMonthReport() {
