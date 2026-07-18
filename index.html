@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Khata — Ledger Book</title>
+<script>
+  (function () {
+    try {
+      var saved = localStorage.getItem('khata_theme_v1');
+      var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    } catch (e) {}
+  })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -21,6 +30,8 @@
     --blue-dark: #163C9E;
     --blue-light: #EAF0FE;
     --blue-pale: #F4F7FE;
+    --bg-accent-2: #F0F5FF;
+    --header-bg: rgba(255,255,255,0.82);
     --credit: #1D6F52;
     --credit-bg: #E9F7F0;
     --debit: #C4342B;
@@ -28,9 +39,58 @@
     --shadow: 0 1px 2px rgba(20, 24, 31, 0.04), 0 4px 16px rgba(20, 24, 31, 0.05);
     --shadow-sm: 0 1px 2px rgba(20, 24, 31, 0.05);
     --radius: 12px;
+    color-scheme: light;
   }
 
+  html[data-theme="dark"] {
+    --bg: #0F1420;
+    --surface: #161C2B;
+    --surface-alt: #1B2233;
+    --border: #2A3345;
+    --border-strong: #3A4560;
+    --ink: #EDF0F5;
+    --ink-soft: #B3BBCC;
+    --ink-faded: #7C879C;
+    --blue: #5B8DFF;
+    --blue-dark: #85AAFF;
+    --blue-light: #1E2C4D;
+    --blue-pale: #182238;
+    --bg-accent-2: #16203A;
+    --header-bg: rgba(15,20,32,0.82);
+    --credit: #3FCB93;
+    --credit-bg: #123329;
+    --debit: #FF6B61;
+    --debit-bg: #3A1917;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.35);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+    color-scheme: dark;
+  }
+
+  html[data-theme="dark"] .save-flash a { color: var(--blue); }
+
   * { box-sizing: border-box; }
+
+  body, .nav-card, .home-summary .cell, .all-summary .cell, .report-summary .cell,
+  input, select, .sheet-wrap, table.ledger, table.ledger thead th, table.ledger tbody tr td,
+  .ghost-btn, .chip, .report-box, .analysis-box, .empty-state, .party-statement, .save-flash,
+  .undo-toast, .type-toggle button, .nav-icon, header.masthead {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* ---------- Dark mode toggle switch ---------- */
+  .theme-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; padding: 0;
+    border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--surface); color: var(--ink-soft);
+    cursor: pointer; transition: border-color 0.15s, color 0.15s, transform 0.12s;
+  }
+  .theme-toggle:hover { border-color: var(--blue); color: var(--blue); }
+  .theme-toggle:active { transform: scale(0.94); }
+  .theme-toggle svg { width: 18px; height: 18px; }
+  .theme-toggle .icon-moon { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
 
   html, body { height: 100%; }
 
@@ -38,13 +98,14 @@
     margin: 0;
     background:
       radial-gradient(1100px 480px at 12% -8%, var(--blue-pale), transparent 60%),
-      radial-gradient(900px 420px at 100% 0%, #F0F5FF, transparent 55%),
+      radial-gradient(900px 420px at 100% 0%, var(--bg-accent-2), transparent 55%),
       var(--bg);
     font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
     color: var(--ink);
     min-height: 100vh;
     padding: 0;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease;
   }
 
   ::selection { background: var(--blue-light); color: var(--blue-dark); }
@@ -100,7 +161,7 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background: rgba(255,255,255,0.82);
+    background: var(--header-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
@@ -614,6 +675,10 @@
       <div class="shopname-wrap">
         <div style="display:flex; gap:10px; align-items:center; justify-content:flex-end;">
           <label for="shopName" id="shopNameLabel" style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faded);">Shop name</label>
+          <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8L6 18M18 6l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
           <button type="button" id="langToggle" class="ghost-btn" style="padding:4px 10px;font-size:10.5px;">বাংলা</button>
         </div>
         <input id="shopName" type="text" placeholder="Enter shop name" value="">
@@ -1085,6 +1150,7 @@
   const MONTH_NAMES_BN = ['জানু','ফেব্রু','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টে','অক্টো','নভে','ডিসে'];
 
   const LANG_KEY = 'khata_lang_v1';
+  const THEME_KEY = 'khata_theme_v1';
   let currentLang = localStorage.getItem(LANG_KEY) || 'en';
 
   function monthLabel(m) { return currentLang === 'bn' ? MONTH_NAMES_BN[m - 1] : MONTH_NAMES[m - 1]; }
@@ -1222,6 +1288,19 @@
   function t(key) { return (translations[currentLang] && translations[currentLang][key]) || translations.en[key] || key; }
 
   const $ = (id) => document.getElementById(id);
+
+  function applyTheme(theme) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  $('themeToggle').addEventListener('click', () => {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
 
   function applyTranslations() {
     document.documentElement.lang = currentLang;
