@@ -266,8 +266,8 @@
   /* ---------- Entry layout: form + live receipt ---------- */
   .entry-layout {
     display: grid;
-    grid-template-columns: minmax(0, 460px) minmax(260px, 320px);
-    gap: 32px;
+    grid-template-columns: minmax(0, 460px) minmax(380px, 520px);
+    gap: 40px;
     align-items: start;
   }
   .qty-row { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
@@ -290,9 +290,9 @@
   .receipt-panel {
     background: #FBF7EC;
     border: 1px solid var(--paper-line);
-    border-radius: 3px;
+    border-radius: 5px;
     padding: 0;
-    box-shadow: 0 3px 10px var(--paper-shadow);
+    box-shadow: 0 6px 22px var(--paper-shadow);
     position: relative;
     overflow: hidden;
     transition: transform 0.18s ease;
@@ -300,54 +300,55 @@
   .receipt-panel.flash { animation: receiptPop 0.4s ease; }
   @keyframes receiptPop {
     0% { transform: scale(0.97); box-shadow: 0 0 0 rgba(184,147,90,0); }
-    35% { transform: scale(1.015); box-shadow: 0 6px 18px rgba(184,147,90,0.35); }
-    100% { transform: scale(1); box-shadow: 0 3px 10px var(--paper-shadow); }
+    35% { transform: scale(1.015); box-shadow: 0 10px 30px rgba(184,147,90,0.35); }
+    100% { transform: scale(1); box-shadow: 0 6px 22px var(--paper-shadow); }
   }
   .receipt-head {
     background: var(--cover); color: var(--paper);
-    padding: 14px 18px; text-align: center;
+    padding: 26px 32px; text-align: center;
   }
   .receipt-head .rh-title {
-    font-family: 'Merriweather', serif; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+    font-family: 'Merriweather', serif; font-weight: 700; font-size: 22px; letter-spacing: 0.5px;
   }
-  .receipt-head .rh-sub { font-size: 10.5px; opacity: 0.75; margin-top: 2px; }
-  .receipt-body { padding: 16px 18px 6px; }
+  .receipt-head .rh-sub { font-size: 13px; opacity: 0.8; margin-top: 5px; }
+  .receipt-body { padding: 30px 32px 12px; }
   .receipt-empty {
-    padding: 34px 18px; text-align: center; color: var(--ink-faded); font-size: 12.5px; line-height: 1.6;
+    padding: 70px 32px; text-align: center; color: var(--ink-faded); font-size: 15px; line-height: 1.7;
   }
-  .receipt-name { font-family: 'Merriweather', serif; font-weight: 700; font-size: 17px; color: var(--ink-black); margin-bottom: 2px; }
+  .receipt-name { font-family: 'Merriweather', serif; font-weight: 700; font-size: 30px; color: var(--ink-black); margin-bottom: 8px; }
   .receipt-badge {
-    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-    padding: 2px 8px; border-radius: 10px; margin-bottom: 12px;
+    display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 5px 14px; border-radius: 14px; margin-bottom: 22px;
   }
   .receipt-badge.credit { background: rgba(31,58,95,0.12); color: var(--ink-credit); }
   .receipt-badge.debit { background: rgba(166,52,45,0.12); color: var(--ink-debit); }
   .receipt-line {
-    display: flex; justify-content: space-between; gap: 10px;
-    font-size: 12.5px; padding: 7px 0; border-bottom: 1px dashed var(--paper-line);
+    display: flex; justify-content: space-between; gap: 14px;
+    font-size: 17px; padding: 14px 0; border-bottom: 1px dashed var(--paper-line);
   }
   .receipt-line .rl-label { color: var(--ink-faded); }
   .receipt-line .rl-value { font-weight: 600; color: var(--ink-black); text-align: right; }
   .receipt-foot {
     display: flex; justify-content: space-between; align-items: baseline;
-    padding: 14px 18px; margin-top: 6px; background: var(--cover-dark);
+    padding: 26px 32px; margin-top: 10px; background: var(--cover-dark);
   }
-  .receipt-foot .rf-label { color: var(--paper); opacity: 0.8; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .receipt-foot .rf-label { color: var(--paper); opacity: 0.85; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
   .receipt-foot .rf-value {
-    font-family: 'Merriweather', serif; font-weight: 900; font-size: 22px; color: var(--gold);
+    font-family: 'Merriweather', serif; font-weight: 900; font-size: 36px; color: var(--gold);
     font-variant-numeric: tabular-nums;
   }
   .receipt-serrate {
-    height: 10px;
-    background-image: radial-gradient(circle at 8px 0, transparent 6px, #FBF7EC 6px);
-    background-size: 16px 10px;
-    background-position: 0 -5px;
+    height: 14px;
+    background-image: radial-gradient(circle at 11px 0, transparent 8px, #FBF7EC 8px);
+    background-size: 22px 14px;
+    background-position: 0 -7px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 980px) {
     .entry-layout { grid-template-columns: 1fr; }
-    .receipt-col { position: static; max-width: 460px; }
+    .receipt-col { position: static; max-width: 520px; }
   }
+
 
   .toolbar {
     display: flex; justify-content: space-between; align-items: center;
