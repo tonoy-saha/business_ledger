@@ -445,7 +445,11 @@
 
   .all-summary {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-    background: var(--paper-line); border: 1px solid var(--paper-line); margin-top: 16px;
+    background: var(--paper-line); border: 1px solid var(--paper-line); margin-top: 0;
+  }
+  .summary-month {
+    margin-top: 16px; margin-bottom: 6px; font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink-faded); font-weight: 600; text-align: center;
   }
   .all-summary .cell { background: var(--paper); padding: 10px 16px; text-align: center; }
   .all-summary .label {
@@ -822,6 +826,7 @@
         No entries yet — go to "New Entry" to add your first transaction.
       </div>
 
+      <div class="summary-month" id="summaryMonthLabel">This month</div>
       <div class="all-summary">
         <div class="cell credit"><div class="label" id="lblTotalCredit1">Total Credit</div><div class="value" id="totalCredit">0</div></div>
         <div class="cell debit"><div class="label" id="lblTotalDebit1">Total Debit</div><div class="value" id="totalDebit">0</div></div>
@@ -1000,6 +1005,7 @@
         No expenses logged yet — add your first one above.
       </div>
 
+      <div class="summary-month" id="expSummaryMonthLabel">This month</div>
       <div class="all-summary">
         <div class="cell credit"><div class="label" id="lblExpTotalCredit">Total Credit (income)</div><div class="value" id="expTotalCredit">0</div></div>
         <div class="cell debit"><div class="label" id="lblExpTotalDebit">Total Debit (expense)</div><div class="value" id="expTotalDebit">0</div></div>
@@ -1751,11 +1757,15 @@
   }
 
   function renderAllSummary() {
-    const totalCredit = entries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
-    const totalDebit = entries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    const monthVal = todayStr().slice(0, 7); // "YYYY-MM"
+    const inMonth = entries.filter(e => e.date.slice(0, 7) === monthVal);
+    const totalCredit = inMonth.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = inMonth.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
     $('totalCredit').textContent = fmt(totalCredit);
     $('totalDebit').textContent = fmt(totalDebit);
     $('netBalance').textContent = fmt(totalCredit - totalDebit);
+    const now = new Date();
+    if ($('summaryMonthLabel')) $('summaryMonthLabel').textContent = monthLabel(now.getMonth() + 1) + ' ' + now.getFullYear();
   }
 
   function render() {
@@ -2417,11 +2427,15 @@
   }
 
   function renderExpenseSummary() {
-    const totalCredit = expenseEntries.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
-    const totalDebit = expenseEntries.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
+    const monthVal = todayStr().slice(0, 7); // "YYYY-MM"
+    const inMonth = expenseEntries.filter(e => e.date.slice(0, 7) === monthVal);
+    const totalCredit = inMonth.reduce((s, e) => s + (e.type === 'credit' ? e.amount : 0), 0);
+    const totalDebit = inMonth.reduce((s, e) => s + (e.type === 'debit' ? e.amount : 0), 0);
     $('expTotalCredit').textContent = fmt(totalCredit);
     $('expTotalDebit').textContent = fmt(totalDebit);
     $('expTotalNet').textContent = fmt(totalCredit - totalDebit);
+    const now = new Date();
+    if ($('expSummaryMonthLabel')) $('expSummaryMonthLabel').textContent = monthLabel(now.getMonth() + 1) + ' ' + now.getFullYear();
   }
 
   function renderExpenses() {
